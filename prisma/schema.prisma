@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url ve directUrl satırlarını SİLİN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("customer") // "admin" or "customer"
+  createdAt DateTime @default(now())
+  invoices  Invoice[]
+}
+
+model Mentor {
+  id        String    @id @default(uuid())
+  name      String
+  email     String
+  specialty String
+  packages  Package[]
+  invoices  Invoice[]
+  createdAt DateTime  @default(now())
+}
+
+model Package {
+  id        String    @id @default(uuid())
+  mentorId  String
+  mentor    Mentor    @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  title     String
+  price     Float
+  duration  Int       // weeks
+  invoices  Invoice[]
+  createdAt DateTime  @default(now())
+}
+
+model Invoice {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  mentorId  String
+  mentor    Mentor    @relation(fields: [mentorId], references: [id])
+  packageId String?
+  package   Package?  @relation(fields: [packageId], references: [id])
+  amount    Float
+  status    String    @default("pending") // "pending" or "paid"
+  createdAt DateTime  @default(now())
+}
