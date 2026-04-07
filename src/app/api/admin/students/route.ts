@@ -1,0 +1,127 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma, getAdminUserId } from "@/lib/prisma";
+
+export async function GET(request: NextRequest) {
+  try {
+    console.log("[API] GET /api/admin/students - Fetching students...");
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+    const mentorId = searchParams.get("mentorId");
+    const search = searchParams.get("search");
+
+    const students = await prisma.student.findMany({
+      include: {
+        studentAssignments: {
+          where: { endDate: null },
+          include: {
+            mentor: {
+              select: { id: true, name: true, email: true }
+            }
+          }
+        },
+        _count: {
+          select: { studentAssignments: true, payments: true }
+        }
+      },
+      where: {
+        ...(status && { status }),
+        ...(mentorId && {
+          studentAssignments: {
+            some: { mentorId, endDate: null }
+          }
+        }),
+        ...(search && {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } }
+          ]
+        })
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    return NextResponse.json(students);
+  } catch (error) {
+    console.error("[API] Error fetching students:", error);
+    return NextResponse.json({ error: "Failed to fetch students" }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    console.log("[API] POST /api/admin/students - Creating student...");
+    
+    // Fixed the line below where the import was stuck to the end of the line
+    const body = await request.json(); 
+    
+    const { name, email, phone, school, grade, startDate, endDate, mentorId } = body;
+
+    if (!name || !email || !phone || !school || !grade || !startDate) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const existingStudent = await prisma.student.findUnique({
+      where: { email }
+    });
+
+    if (existingStudent) {
+      return NextResponse.json(
+        { error: "Student with this email already exists" },
+        { status: 400 }
+      );
+    }
+
+    const student = await prisma.student.create({
+      data: {
+        name,
+        email,
+        phone,
+        school,
+        grade,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : null
+      }
+    });
+
+    if (mentorId) {
+      await prisma.studentAssignment.create({
+        data: {
+          studentId: student.id,
+          mentorId,
+          startDate: new Date(startDate)
+        }
+      });
+    }
+
+    try {
+      const adminUserId = await getAdminUserId();
+      await prisma.log.create({
+        data: {
+          entityType: "student",
+          entityId: student.id,
+          action: "created",
+          description: `Student ${name} created`,
+          userId: adminUserId,
+          studentId: student.id,
+          metadata: { mentorId }
+        }
+      });
+    } catch (logError) {
+      console.error("[API] Warning: Failed to create log:", logError);
+    }
+
+    return NextResponse.json({ success: true, student }, { status: 201 });
+  } catch (error) {
+    console.error("[API] Error creating student:", error);
+    return NextResponse.json(
+      { 
+        error: "Failed to create student", 
+        details: error instanceof Error ? error.message : String(error) 
+      }, 
+      { status: 500 }
+    );
+  }
+}

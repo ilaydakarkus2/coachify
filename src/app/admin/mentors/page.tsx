@@ -94,11 +94,17 @@ export default function MentorsPage() {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
             <div className="flex gap-4">
-              <Link href="/admin/packages" className="text-blue-600 hover:text-blue-800">
-                Packages
+              <Link href="/admin/students" className="text-blue-600 hover:text-blue-800">
+                Students
               </Link>
-              <Link href="/admin/invoices" className="text-blue-600 hover:text-blue-800">
-                Invoices
+              <Link href="/admin/assignments" className="text-blue-600 hover:text-blue-800">
+                Assignments
+              </Link>
+              <Link href="/admin/payments" className="text-blue-600 hover:text-blue-800">
+                Payments
+              </Link>
+              <Link href="/admin/logs" className="text-blue-600 hover:text-blue-800">
+                Logs
               </Link>
               <button onClick={() => router.push("/login")} className="text-red-600 hover:text-red-800">
                 Logout
