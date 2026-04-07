@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request,
+  { params }: { params: Promise<{ id: string }> } 
 ) {
   try {
+    const { id } = await params;
     // First get the mentor to find userId
     const mentor = await prisma.mentor.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     if (!mentor) {
@@ -17,7 +18,7 @@ export async function DELETE(
 
     // Delete mentor (this will cascade delete related data)
     await prisma.mentor.delete({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     // Delete the associated user

@@ -8,6 +8,22 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const mentorId = searchParams.get("mentorId");
     const search = searchParams.get("search");
+    
+    let searchCondition = {};
+
+if (search) {
+  const searchTRLower = search.toLocaleLowerCase('tr-TR');
+      const searchTRUpper = search.toLocaleUpperCase('tr-TR');
+
+  searchCondition = {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { name: { contains: searchTRLower, mode: "insensitive" } },
+          { name: { contains: searchTRUpper, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+        ]
+      };
+}
 
     const students = await prisma.student.findMany({
       include: {
@@ -30,12 +46,7 @@ export async function GET(request: NextRequest) {
             some: { mentorId, endDate: null }
           }
         }),
-        ...(search && {
-          OR: [
-            { name: { contains: search, mode: "insensitive" } },
-            { email: { contains: search, mode: "insensitive" } }
-          ]
-        })
+        ...(search && searchCondition)
       },
       orderBy: { createdAt: "desc" }
     });

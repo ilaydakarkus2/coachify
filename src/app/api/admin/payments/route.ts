@@ -59,59 +59,55 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { studentId, mentorId, userId, amount, weeks, status, notes } = body
+    const { studentId, mentorId, amount, weeks, status, notes } = body
 
-    if (!studentId || !mentorId || !userId || !amount || !weeks) {
+    // İşlemi yapan adminin ID'sini alıyoruz
+    const adminUserId = await getAdminUserId()
+
+    // Gerekli alanların kontrolü (body'den gelmesi beklenenler)
+    if (!studentId || !mentorId || !amount || !weeks) {
+      console.log("[API] Missing fields:", { studentId, mentorId, adminUserId, amount, weeks });
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       )
     }
 
-    // Check if student exists
+    // Öğrenci kontrolü
     const student = await prisma.student.findUnique({
       where: { id: studentId }
     })
 
     if (!student) {
-      return NextResponse.json(
-        { error: "Student not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Student not found" }, { status: 404 })
     }
 
-    // Check if mentor exists
+    // Mentor kontrolü
     const mentor = await prisma.mentor.findUnique({
       where: { id: mentorId }
     })
 
     if (!mentor) {
-      return NextResponse.json(
-        { error: "Mentor not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Mentor not found" }, { status: 404 })
     }
 
-    // Check if user exists
+    // Kullanıcı (Admin) kontrolü - adminUserId kullanarak yapıyoruz
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: adminUserId }
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Admin user not found" }, { status: 404 })
     }
 
-    // Create payment
+    // Ödeme oluşturma
     const payment = await prisma.payment.create({
       data: {
         studentId,
         mentorId,
-        userId,
-        amount: parseFloat(amount),
-        weeks: parseInt(weeks),
+        userId: adminUserId, // Artık body'den gelen belirsiz userId yerine adminUserId kullanıyoruz
+        amount: parseFloat(amount.toString()),
+        weeks: parseInt(weeks.toString()),
         status: status || "pending",
         notes: notes || null
       },
@@ -133,9 +129,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Log the payment creation
+    // Loglama
     try {
-      const adminUserId = await getAdminUserId()
       await prisma.log.create({
         data: {
           entityType: "payment",
@@ -160,6 +155,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, payment }, { status: 201 })
   } catch (error) {
     console.error("Error creating payment:", error)
-    return NextResponse.json({ error: "Failed to create payment", details: error instanceof Error ? error.message : String(error) }, { status: 500 })
+    return NextResponse.json({ 
+      error: "Failed to create payment", 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 })
   }
 }

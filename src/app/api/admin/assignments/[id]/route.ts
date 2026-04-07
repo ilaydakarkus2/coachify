@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma, getAdminUserId } from "@/lib/prisma"
 
+// Tip tanımını buraya ekleyelim (Next.js 15 standartı)
+type RouteParams = { params: Promise<{ id: string }> };
+
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    // 1. ADIM: Params'ı await ile çözüyoruz
+    const { id } = await params;
+
     const body = await request.json()
     const { endDate, notes } = body
 
-    // Get current assignment
+    // 2. ADIM: Artık çözülmüş olan 'id'yi kullanıyoruz
     const currentAssignment = await prisma.studentAssignment.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         student: {
           select: {
@@ -39,7 +45,7 @@ export async function PATCH(
 
     // Update assignment
     const assignment = await prisma.studentAssignment.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         student: {
@@ -85,17 +91,23 @@ export async function PATCH(
     return NextResponse.json({ success: true, assignment })
   } catch (error) {
     console.error("Error updating assignment:", error)
-    return NextResponse.json({ error: "Failed to update assignment", details: error instanceof Error ? error.message : String(error) }, { status: 500 })
+    return NextResponse.json({ 
+      error: "Failed to update assignment", 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 })
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    // 1. ADIM: Params'ı await ile çözüyoruz
+    const { id } = await params;
+
     const assignment = await prisma.studentAssignment.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         student: {
           select: {
@@ -112,7 +124,7 @@ export async function DELETE(
 
     // Delete assignment
     await prisma.studentAssignment.delete({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     return NextResponse.json({ success: true })

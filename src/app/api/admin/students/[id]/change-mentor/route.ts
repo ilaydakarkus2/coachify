@@ -3,9 +3,12 @@ import { prisma, getAdminUserId } from "@/lib/prisma"
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Params'ı Promise olarak tanımladık
 ) {
   try {
+    // 1. ADIM: params'ı bekleyip içindeki id'yi alıyoruz
+    const { id: studentId } = await params;
+
     const body = await request.json()
     const { newMentorId, startDate, notes } = body
 
@@ -18,7 +21,7 @@ export async function POST(
 
     // Get student
     const student = await prisma.student.findUnique({
-      where: { id: params.id },
+      where: { id: studentId }, // params.id yerine studentId kullandık
       include: {
         studentAssignments: {
           where: { endDate: null },
@@ -55,9 +58,9 @@ export async function POST(
     // Use a transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
       // End all active assignments for this student
-      const activeAssignments = await tx.studentAssignment.updateMany({
+      await tx.studentAssignment.updateMany({
         where: {
-          studentId: params.id,
+          studentId: studentId, // Güncellendi
           endDate: null
         },
         data: {
@@ -87,7 +90,7 @@ export async function POST(
       // Create new assignment
       const newAssignment = await tx.studentAssignment.create({
         data: {
-          studentId: params.id,
+          studentId: studentId, // Güncellendi
           mentorId: newMentorId,
           startDate: new Date(startDate),
           notes: notes || null

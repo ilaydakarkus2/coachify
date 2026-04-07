@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma, getAdminUserId } from "@/lib/prisma"
 
+// Tip tanımını buraya ekleyelim (Next.js 15 standartı)
+type RouteParams = { params: Promise<{ id: string }> };
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    // 1. ADIM: Params'ı await et
+    const { id } = await params;
+
     const student = await prisma.student.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         studentAssignments: {
           include: {
@@ -63,18 +69,19 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
-    console.log("[API] PATCH /api/admin/students/[id] - Updating student:", params.id)
+    // 1. ADIM: Params'ı await et
+    const { id } = await params;
+
+    console.log("[API] PATCH /api/admin/students/[id] - Updating student:", id)
     const body = await request.json()
     const { name, email, phone, school, grade, startDate, endDate, status, paymentStatus } = body
 
-    console.log("[API] Update data:", { name, email, phone, school, grade, startDate, endDate, status, paymentStatus })
-
     // Get current student for comparison
     const currentStudent = await prisma.student.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     if (!currentStudent) {
@@ -95,15 +102,13 @@ export async function PATCH(
 
     // Update student
     const student = await prisma.student.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData
     })
 
     // Log the update
     try {
       const adminUserId = await getAdminUserId()
-      console.log("[API] Admin user ID for logging:", adminUserId)
-
       await prisma.log.create({
         data: {
           entityType: "student",
@@ -121,37 +126,35 @@ export async function PATCH(
           }
         }
       })
-      console.log("[API] Log created successfully")
     } catch (logError) {
       console.error("[API] Warning: Failed to create log:", logError)
-      // Don't fail the whole operation if logging fails
     }
 
-    console.log("[API] Student updated successfully:", student)
     return NextResponse.json({ success: true, student })
   } catch (error) {
     console.error("[API] Error updating student:", error)
-    console.error("[API] Error details:", JSON.stringify(error, null, 2))
     return NextResponse.json({ error: "Failed to update student", details: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    // 1. ADIM: Params'ı await et
+    const { id } = await params;
+
     const student = await prisma.student.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     if (!student) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 })
     }
 
-    // Delete student (this will cascade delete assignments, payments, and logs)
     await prisma.student.delete({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     return NextResponse.json({ success: true })
