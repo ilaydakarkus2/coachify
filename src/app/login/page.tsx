@@ -26,9 +26,14 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password")
       } else {
-        const userRole = localStorage.getItem("userRole")
+        // Role-based redirect
+        const session = await fetch("/api/auth/session").then(res => res.json())
+        const userRole = session?.user?.role
+
         if (userRole === "admin") {
           router.push("/admin")
+        } else if (userRole === "mentor") {
+          router.push("/customer/mentors")
         } else {
           router.push("/customer")
         }
@@ -108,7 +113,7 @@ export default function LoginPage() {
               Admin: admin@coachify.com / admin123
             </p>
             <p className="text-xs text-gray-500">
-              Customer: customer@test.com / customer123
+              Mentor: efe@coachify.com / efe123
             </p>
           </div>
         </form>
