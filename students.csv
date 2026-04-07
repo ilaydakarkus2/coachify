@@ -1,0 +1,11 @@
+name,email,phone,school,grade,startDate,mentorId,paymentStatus,status
+Ahmet Yılmaz,ahmet.yilmaz@example.com,05551112233,Mehmet Akif Anadolu Lisesi,12,2025-02-02,1,paid,active
+Elif Kaya,elif.kaya@example.com,05551112244,Kabataş Lisesi,11,2025-02-05,2,paid,active
+Can Demir,can.demir@example.com,05551112255,Galatasaray Lisesi,12,2025-02-10,3,paid,active
+Selin Aktaş,selin.aktas@example.com,05551112266,BEŞİKTAŞ Lisesi,11,2025-03-01,1,paid,active
+Emre Türk,emre.turk@example.com,05551112277,Vefa Lisesi,12,2025-03-05,2,pending,active
+Zeynep Çelik,zeynep.celik@example.com,05551112288,Üsküdar Lisesi,11,2025-03-08,3,paid,dropped
+Onur Ayaz,onur.ayaz@example.com,05551112299,Kadıköy Lisesi,12,2025-03-12,1,refunded,refunded
+Burak Şahin,burak.sahin@example.com,05551112300,Atatürk Lisesi,11,2025-04-01,2,paid,active
+Sedef Yılmaz,sedef.yilmaz@example.com,05551112311,Kabataş Lisesi,12,2025-04-03,3,paid,active
+Yiğit Arslan,yigit.arslan@example.com,05551112322,Galatasaray Lisesi,11,2025-04-05,1,paid,active

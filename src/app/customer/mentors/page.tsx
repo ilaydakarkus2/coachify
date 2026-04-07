@@ -9,14 +9,12 @@ interface Mentor {
   name: string
   email: string
   specialty: string
-  packages: Package[]
-}
-
-interface Package {
-  id: string
-  title: string
-  price: number
-  duration: number
+  user?: {
+    id: string
+    email: string
+    name: string
+    role: string
+  }
 }
 
 export default function MentorsPage() {
@@ -32,7 +30,16 @@ export default function MentorsPage() {
     try {
       const res = await fetch("/api/customer/mentors")
       const data = await res.json()
-      setMentors(data)
+
+      console.log("Mentors data:", data)
+
+      if (Array.isArray(data)) {
+        setMentors(data)
+      } else if (data.error) {
+        console.error("API error:", data.error)
+      } else {
+        console.error("Unexpected data format:", data)
+      }
     } catch (error) {
       console.error("Failed to fetch mentors:", error)
     } finally {
@@ -76,23 +83,9 @@ export default function MentorsPage() {
               <p className="text-gray-600 mb-1">{mentor.email}</p>
               <p className="text-gray-600 mb-4">{mentor.specialty}</p>
 
-              {mentor.packages.length > 0 ? (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-gray-700">Packages:</h4>
-                  {mentor.packages.map((pkg) => (
-                    <div
-                      key={pkg.id}
-                      onClick={() => router.push(`/customer/create-invoice?mentorId=${mentor.id}&packageId=${pkg.id}`)}
-                      className="border rounded p-3 cursor-pointer hover:bg-gray-50 transition"
-                    >
-                      <div className="font-medium">{pkg.title}</div>
-                      <div className="text-sm text-gray-600">${pkg.price} - {pkg.duration} weeks</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">No packages available</p>
-              )}
+              <div className="text-sm text-gray-500">
+                Role: {mentor.user?.role || 'N/A'}
+              </div>
             </div>
           ))}
         </div>

@@ -1,7 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Coachify Mentor Payment Panel - Database Schema
 
 generator client {
   provider = "prisma-client-js"
@@ -9,49 +6,109 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url ve directUrl satırlarını SİLİN
+  url      = env("DATABASE_URL")
 }
 
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  password  String
+  password  String   // Plain text for now as requested
   name      String
-  role      String   @default("customer") // "admin" or "customer"
+  role      String   @default("customer") // "admin", "mentor", "customer"
   createdAt DateTime @default(now())
-  invoices  Invoice[]
+
+  // Relations
+  mentorProfile Mentor?
+  payments      Payment[]
+  logs          Log[]
 }
 
 model Mentor {
-  id        String    @id @default(uuid())
+  id        String            @id @default(uuid())
+  userId    String            @unique
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
   email     String
   specialty String
-  packages  Package[]
-  invoices  Invoice[]
-  createdAt DateTime  @default(now())
+  createdAt DateTime          @default(now())
+
+  // Relations
+  studentAssignments StudentAssignment[]
+  payments           Payment[]
 }
 
-model Package {
-  id        String    @id @default(uuid())
-  mentorId  String
-  mentor    Mentor    @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  title     String
-  price     Float
-  duration  Int       // weeks
-  invoices  Invoice[]
-  createdAt DateTime  @default(now())
+model Student {
+  id              String             @id @default(uuid())
+  name            String
+  email           String             @unique
+  phone           String
+  school          String
+  grade           String
+  startDate       DateTime
+  endDate         DateTime?
+  status          String             @default("active") // "active", "dropped", "refunded"
+  paymentStatus   String             @default("pending") // "pending", "paid", "refunded"
+  packageDuration Int                @default(4) // weeks
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relations
+  studentAssignments StudentAssignment[]
+  payments           Payment[]
+  logs               Log[]
 }
 
-model Invoice {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  mentorId  String
-  mentor    Mentor    @relation(fields: [mentorId], references: [id])
-  packageId String?
-  package   Package?  @relation(fields: [packageId], references: [id])
-  amount    Float
-  status    String    @default("pending") // "pending" or "paid"
-  createdAt DateTime  @default(now())
+model StudentAssignment {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  mentorId    String
+  mentor      Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  startDate   DateTime
+  endDate     DateTime? @default(dbgenerated("NULL"))
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, mentorId, startDate])
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  mentorId    String
+  mentor      Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount      Float
+  weeks       Int      // Number of weeks completed
+  paymentDate DateTime @default(now())
+  status      String   @default("pending") // "pending", "paid", "refunded"
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([mentorId, paymentDate])
+}
+
+model Log {
+  id          String   @id @default(uuid())
+  entityType  String   // "student", "mentor", "assignment", "payment"
+  entityId    String
+  action      String   // "created", "updated", "deleted"
+  description String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  studentId   String?
+  student     Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+
+  metadata    Json?    // Additional data about the change
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

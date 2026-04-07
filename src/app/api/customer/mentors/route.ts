@@ -5,12 +5,12 @@ export async function GET() {
   try {
     const mentors = await prisma.mentor.findMany({
       include: {
-        packages: {
+        user: {
           select: {
             id: true,
-            title: true,
-            price: true,
-            duration: true
+            email: true,
+            name: true,
+            role: true
           }
         }
       },

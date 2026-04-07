@@ -1,6 +1,5 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -26,10 +25,8 @@ export const authOptions: NextAuthOptions = {
           throw new Error("User not found")
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
+        // Direct password comparison (plain text as requested)
+        const isPasswordValid = credentials.password === user.password
 
         if (!isPasswordValid) {
           throw new Error("Invalid password")
