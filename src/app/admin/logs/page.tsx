@@ -96,9 +96,6 @@ export default function LogsPage() {
               <Link href="/admin/assignments" className="text-brand-sand hover:text-white transition-colors">
                 Atamalar
               </Link>
-              <Link href="/admin/payments" className="text-brand-sand hover:text-white transition-colors">
-                Ödemeler
-              </Link>
               <Link href="/admin/mentor-earnings" className="text-brand-sand hover:text-white transition-colors">
                 Mentor Kazançları
               </Link>
