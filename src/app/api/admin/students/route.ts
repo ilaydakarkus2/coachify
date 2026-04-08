@@ -93,7 +93,8 @@ export async function POST(request: NextRequest) {
         school,
         grade,
         startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : null
+        endDate: endDate ? new Date(endDate) : null,
+        purchaseDate: new Date()
       }
     });
 

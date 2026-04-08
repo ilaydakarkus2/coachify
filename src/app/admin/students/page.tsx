@@ -60,6 +60,10 @@ export default function StudentsPage() {
     status: "",
     search: ""
   })
+  const [showExtendForm, setShowExtendForm] = useState(false)
+  const [extendStudent, setExtendStudent] = useState<Student | null>(null)
+  const [extendData, setExtendData] = useState({ weeks: 1, reason: "" })
+  const [extendLoading, setExtendLoading] = useState(false)
 
   useEffect(() => {
     fetchStudents()
@@ -172,6 +176,55 @@ export default function StudentsPage() {
     } catch (error) {
       console.error("Failed to delete student:", error)
     }
+  }
+
+  const handleExtendSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!extendStudent) return
+
+    setExtendLoading(true)
+    try {
+      const res = await fetch(`/api/admin/students/${extendStudent.id}/extend-membership`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(extendData)
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        alert(errorData.error || "Bir hata oluştu")
+        return
+      }
+
+      setShowExtendForm(false)
+      setExtendStudent(null)
+      setExtendData({ weeks: 1, reason: "" })
+      fetchStudents()
+    } catch (error) {
+      console.error("Failed to extend membership:", error)
+      alert("Üyelik süresi uzatılamadı.")
+    } finally {
+      setExtendLoading(false)
+    }
+  }
+
+  const openExtendForm = (student: Student) => {
+    setExtendStudent(student)
+    setExtendData({ weeks: 1, reason: "" })
+    setShowExtendForm(true)
+  }
+
+  const getPreviewEndDate = () => {
+    if (!extendStudent) return ""
+    const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
+    let base: Date
+    if (extendStudent.endDate) {
+      base = new Date(extendStudent.endDate)
+      base = new Date(base.getTime() + extendData.weeks * MS_PER_WEEK)
+    } else {
+      base = new Date(new Date(extendStudent.startDate).getTime() + (4 + extendData.weeks) * MS_PER_WEEK)
+    }
+    return base.toLocaleDateString("tr-TR")
   }
 
   const openEditForm = (student: Student) => {
@@ -431,6 +484,9 @@ export default function StudentsPage() {
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-right space-x-3">
                       <button onClick={() => openEditForm(student)} className="text-brand-primary hover:text-brand-logo font-bold text-xs uppercase transition-colors">Düzenle</button>
+                      {student.status === "active" && (
+                        <button onClick={() => openExtendForm(student)} className="text-green-600 hover:text-green-800 font-bold text-xs uppercase transition-colors">Ek Süre</button>
+                      )}
                       <button onClick={() => handleDelete(student.id)} className="text-red-400 hover:text-red-600 font-bold text-xs uppercase transition-colors">Sil</button>
                     </td>
                   </tr>
@@ -442,6 +498,62 @@ export default function StudentsPage() {
             <div className="text-center py-12 text-brand-silver font-medium italic">Öğrenci bulunamadı.</div>
           )}
         </div>
+
+        {/* Ek Süre Modali */}
+        {showExtendForm && extendStudent && (
+          <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border-t-8 border-green-500">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-brand-dark">Ek Süre Tanımla</h3>
+                  <button onClick={() => { setShowExtendForm(false); setExtendStudent(null) }} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">✕</button>
+                </div>
+                <p className="text-sm text-brand-muted mb-1">
+                  <span className="font-bold">{extendStudent.name}</span> için ek süre tanımlıyorsunuz.
+                </p>
+                <p className="text-xs text-brand-silver mb-5">
+                  Mevcut bitiş: {extendStudent.endDate ? new Date(extendStudent.endDate).toLocaleDateString("tr-TR") : "Süresiz"}
+                </p>
+                <form onSubmit={handleExtendSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Eklenecek Hafta Sayısı *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="52"
+                      required
+                      className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                      value={extendData.weeks}
+                      onChange={(e) => setExtendData({ ...extendData, weeks: parseInt(e.target.value) || 1 })}
+                    />
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-sm text-green-800">
+                      <span className="font-bold">Yeni bitiş tarihi:</span> {getPreviewEndDate()}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Not / Sebep</label>
+                    <input
+                      type="text"
+                      placeholder="Opsiyonel..."
+                      className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                      value={extendData.reason}
+                      onChange={(e) => setExtendData({ ...extendData, reason: e.target.value })}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={extendLoading}
+                    className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-all disabled:opacity-50"
+                  >
+                    {extendLoading ? "Kaydediliyor..." : `${extendData.weeks} Hafta Ekle`}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );}

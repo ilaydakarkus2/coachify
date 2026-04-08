@@ -245,7 +245,7 @@ export async function calculatePendingEarnings(adminUserId: string): Promise<num
   const assignments = await prisma.studentAssignment.findMany({
     include: {
       student: {
-        select: { id: true, startDate: true, status: true }
+        select: { id: true, startDate: true, status: true, purchaseDate: true }
       }
     }
   })
@@ -255,8 +255,9 @@ export async function calculatePendingEarnings(adminUserId: string): Promise<num
   for (const assignment of assignments) {
     const assignmentEnd = assignment.endDate ?? now
 
-    // Bu ogrencinin tum donem tarihlerini al
-    const allCycleDates = getAllCycleDates(assignment.student.startDate, now)
+    // Bu ogrencinin tum donem tarihlerini al (SAG=purchaseDate, fallback=startDate)
+    const sag = assignment.student.purchaseDate ?? assignment.student.startDate
+    const allCycleDates = getAllCycleDates(sag, now)
 
     // Bu atamanin baslangicindan sonraki donemleri filtrele
     const cycleDates = allCycleDates.filter(d => d > assignment.startDate)

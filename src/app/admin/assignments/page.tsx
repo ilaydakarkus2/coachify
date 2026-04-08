@@ -146,6 +146,26 @@ export default function AssignmentsPage() {
     }
   }
 
+  const handleDeleteAssignment = async (id: string) => {
+    if (!confirm("Bu atamayı silmek istediğinize emin misiniz? İlişkili hakediş kayıtları da iptal edilecek.")) return
+
+    try {
+      const res = await fetch(`/api/admin/assignments/${id}`, {
+        method: "DELETE"
+      })
+
+      if (res.ok) {
+        fetchAssignments()
+      } else {
+        const data = await res.json()
+        alert(data.error || "Silme işlemi başarısız oldu")
+      }
+    } catch (error) {
+      console.error("Failed to delete assignment:", error)
+      alert("Atama silinemedi.")
+    }
+  }
+
   const handleChangeMentor = async (e: React.FormEvent) => {
   e.preventDefault();
   setFormError(null); // Her denemede hatayı sıfırla
@@ -492,12 +512,7 @@ export default function AssignmentsPage() {
               ) : (
                 /* Sonlananlar için Sil Butonu */
                 <button
-                  onClick={() => {
-                    if(confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
-                      // Buraya silme fonksiyonunu (handleDelete) bağlayabilirsin
-                      console.log("Silinecek ID:", assignment.id);
-                    }
-                  }}
+                  onClick={() => handleDeleteAssignment(assignment.id)}
                   className="text-brand-silver hover:text-red-500 font-bold text-xs uppercase transition-colors flex items-center gap-1 ml-auto justify-end"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

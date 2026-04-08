@@ -136,7 +136,7 @@ export async function PATCH(
               dropDate,
               triggerReason,
               adminId,
-              currentStudent.startDate
+              currentStudent.purchaseDate ?? currentStudent.startDate
             )
           }
 

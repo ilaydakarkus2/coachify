@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma, getAdminUserId } from "@/lib/prisma"
+import { finalizeMentorEarningForAssignment } from "@/lib/mentor-earnings"
 
 // Tip tanımını buraya ekleyelim (Next.js 15 standartı)
 type RouteParams = { params: Promise<{ id: string }> };
@@ -22,7 +23,9 @@ export async function PATCH(
         student: {
           select: {
             id: true,
-            name: true
+            name: true,
+            purchaseDate: true,
+            startDate: true
           }
         },
         mentor: {
@@ -43,32 +46,48 @@ export async function PATCH(
     if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null
     if (notes !== undefined) updateData.notes = notes
 
-    // Update assignment
-    const assignment = await prisma.studentAssignment.update({
-      where: { id: id },
-      data: updateData,
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        mentor: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+    const adminUserId = await getAdminUserId()
+
+    // Eger endDate set ediliyorsa ve atama aktifse, earning finalize et
+    const isEnding = updateData.endDate && !currentAssignment.endDate
+
+    await prisma.$transaction(async (tx) => {
+      const assignment = await tx.studentAssignment.update({
+        where: { id: id },
+        data: updateData,
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              purchaseDate: true,
+              startDate: true
+            }
+          },
+          mentor: {
+            select: { id: true, name: true, email: true }
           }
         }
-      }
-    })
+      })
 
-    // Log the update
-    try {
-      const adminUserId = await getAdminUserId()
-      await prisma.log.create({
+      if (isEnding) {
+        const sag = assignment.student.purchaseDate ?? assignment.student.startDate
+        await finalizeMentorEarningForAssignment(
+          tx,
+          id,
+          assignment.mentorId,
+          assignment.studentId,
+          currentAssignment.startDate,
+          updateData.endDate,
+          "assignment_end",
+          adminUserId,
+          sag
+        )
+      }
+
+      // Log the update
+      await tx.log.create({
         data: {
           entityType: "assignment",
           entityId: assignment.id,
@@ -84,11 +103,9 @@ export async function PATCH(
           }
         }
       })
-    } catch (logError) {
-      console.error("Warning: Failed to create log:", logError)
-    }
+    })
 
-    return NextResponse.json({ success: true, assignment })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error updating assignment:", error)
     return NextResponse.json({ 
@@ -103,7 +120,6 @@ export async function DELETE(
   { params }: RouteParams
 ) {
   try {
-    // 1. ADIM: Params'ı await ile çözüyoruz
     const { id } = await params;
 
     const assignment = await prisma.studentAssignment.findUnique({
@@ -112,8 +128,13 @@ export async function DELETE(
         student: {
           select: {
             id: true,
-            name: true
+            name: true,
+            purchaseDate: true,
+            startDate: true
           }
+        },
+        mentor: {
+          select: { id: true, name: true }
         }
       }
     })
@@ -122,9 +143,57 @@ export async function DELETE(
       return NextResponse.json({ error: "Assignment not found" }, { status: 404 })
     }
 
-    // Delete assignment
-    await prisma.studentAssignment.delete({
-      where: { id: id }
+    const adminUserId = await getAdminUserId()
+    const now = new Date()
+    const sag = assignment.student.purchaseDate ?? assignment.student.startDate
+
+    await prisma.$transaction(async (tx) => {
+      // Atama icin pending earning kayitlarini iptal et
+      await tx.mentorEarning.updateMany({
+        where: {
+          assignmentId: id,
+          status: "pending"
+        },
+        data: { status: "cancelled" }
+      })
+
+      // Eger atama hala aktifse, finalize et (paid kayitlara dokunma)
+      if (!assignment.endDate) {
+        await finalizeMentorEarningForAssignment(
+          tx,
+          id,
+          assignment.mentorId,
+          assignment.studentId,
+          assignment.startDate,
+          now,
+          "assignment_deleted",
+          adminUserId,
+          sag
+        )
+      }
+
+      // Atamayi sil
+      await tx.studentAssignment.delete({
+        where: { id: id }
+      })
+
+      // Log
+      await tx.log.create({
+        data: {
+          entityType: "assignment",
+          entityId: id,
+          action: "deleted",
+          description: `Atama silindi: ${assignment.student.name} - ${assignment.mentor.name}`,
+          userId: adminUserId,
+          studentId: assignment.studentId,
+          metadata: {
+            mentorId: assignment.mentorId,
+            mentorName: assignment.mentor.name,
+            startDate: assignment.startDate.toISOString(),
+            endDate: assignment.endDate?.toISOString() ?? null
+          }
+        }
+      })
     })
 
     return NextResponse.json({ success: true })

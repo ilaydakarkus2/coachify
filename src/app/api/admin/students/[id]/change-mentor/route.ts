@@ -81,7 +81,7 @@ export async function POST(
           endDate,
           "assignment_end",
           adminUserId,
-          student.startDate
+          student.purchaseDate ?? student.startDate
         )
       }
 
