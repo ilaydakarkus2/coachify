@@ -76,31 +76,31 @@ export default function LogsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
+    <div className="min-h-screen bg-brand-ghost">
+      {/* Üst Bar (Header) */}
+      <div className="bg-brand-dark shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <Link href="/admin">
-            <h1 className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors">
-              Admin Dashboard
-            </h1>
-          </Link>
-            <div className="flex gap-4">
-              <Link href="/admin/mentors" className="text-blue-600 hover:text-blue-800">
-                Mentors
+              <h1 className="text-2xl font-bold text-white cursor-pointer hover:text-brand-primary transition-colors">
+                Coachify <span className="text-brand-primary">Admin</span>
+              </h1>
+            </Link>
+            <div className="flex gap-4 items-center">
+              <Link href="/admin/mentors" className="text-brand-sand hover:text-white transition-colors">
+                Mentorlar
               </Link>
-              <Link href="/admin/students" className="text-blue-600 hover:text-blue-800">
-                Students
+              <Link href="/admin/students" className="text-brand-sand hover:text-white transition-colors">
+                Öğrenciler
               </Link>
-              <Link href="/admin/assignments" className="text-blue-600 hover:text-blue-800">
-                Assignments
+              <Link href="/admin/assignments" className="text-brand-sand hover:text-white transition-colors">
+                Atamalar
               </Link>
-              <Link href="/admin/payments" className="text-blue-600 hover:text-blue-800">
-                Payments
+              <Link href="/admin/payments" className="text-brand-sand hover:text-white transition-colors">
+                Ödemeler
               </Link>
-              <button onClick={() => router.push("/login")} className="text-red-600 hover:text-red-800">
-                Logout
+              <button onClick={() => router.push("/login")} className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium transition-all">
+                Çıkış
               </button>
             </div>
           </div>
@@ -108,56 +108,56 @@ export default function LogsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Audit Logs</h2>
+        <h2 className="text-2xl font-bold text-brand-dark mb-6">İşlem Kayıtları</h2>
 
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
+        {/* Filtreler */}
+        <div className="bg-brand-sand p-5 rounded-2xl shadow-sm border border-brand-silver/20 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">İşlem Tipi</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                 value={filters.entityType}
                 onChange={(e) => setFilters({ ...filters, entityType: e.target.value })}
               >
-                <option value="">All Entities</option>
-                <option value="student">Student</option>
+                <option value="">Tümü</option>
+                <option value="student">Öğrenci</option>
                 <option value="mentor">Mentor</option>
-                <option value="assignment">Assignment</option>
-                <option value="payment">Payment</option>
+                <option value="assignment">Atama</option>
+                <option value="payment">Ödeme</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Eylem</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                 value={filters.action}
                 onChange={(e) => setFilters({ ...filters, action: e.target.value })}
               >
-                <option value="">All Actions</option>
-                <option value="created">Created</option>
-                <option value="updated">Updated</option>
-                <option value="deleted">Deleted</option>
-                <option value="status_changed">Status Changed</option>
-                <option value="mentor_changed">Mentor Changed</option>
-                <option value="payment_processed">Payment Processed</option>
-                <option value="refunded">Refunded</option>
+                <option value="">Tüm Eylemler</option>
+                <option value="created">Oluşturuldu</option>
+                <option value="updated">Güncellendi</option>
+                <option value="deleted">Silindi</option>
+                <option value="status_changed">Durum Değişti</option>
+                <option value="mentor_changed">Mentor Değişti</option>
+                <option value="payment_processed">Ödeme İşlendi</option>
+                <option value="refunded">İade Edildi</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Başlangıç</label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                 value={filters.startDate}
                 onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Bitiş</label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                 value={filters.endDate}
                 onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
               />
@@ -165,85 +165,78 @@ export default function LogsPage() {
             <div className="flex items-end">
               <button
                 onClick={resetFilters}
-                className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+                className="w-full bg-brand-muted text-white px-4 py-2 rounded-xl font-bold hover:bg-brand-dark transition-all"
               >
-                Reset Filters
+                Filtreleri Sıfırla
               </button>
             </div>
           </div>
         </div>
 
-        {/* Logs Table */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+        {/* Kayıtlar Tablosu */}
+        <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-brand-silver/10">
+              <thead className="bg-brand-ghost">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date & Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Entity
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Details
-                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tarih & Saat</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Kategori</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Eylem</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Açıklama</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Yönetici</th>
+                  <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">Detay</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-brand-silver/5">
                 {logs.map((log) => (
-                  <tr key={log.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(log.createdAt).toLocaleString()}
+                  <tr key={log.id} className="hover:bg-brand-sand/30 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-dark font-medium">
+                      {new Date(log.createdAt).toLocaleString('tr-TR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
+                      <span className={`px-2 py-1 text-[10px] font-black uppercase rounded-full ${
                         log.entityType === "student" ? "bg-blue-100 text-blue-800" :
                         log.entityType === "mentor" ? "bg-purple-100 text-purple-800" :
-                        log.entityType === "assignment" ? "bg-green-100 text-green-800" :
+                        log.entityType === "assignment" ? "bg-brand-primary/20 text-brand-logo" :
                         log.entityType === "payment" ? "bg-orange-100 text-orange-800" :
                         "bg-gray-100 text-gray-800"
                       }`}>
-                        {log.entityType}
+                        {log.entityType === "student" ? "Öğrenci" : 
+                         log.entityType === "mentor" ? "Mentor" :
+                         log.entityType === "assignment" ? "Atama" :
+                         log.entityType === "payment" ? "Ödeme" : log.entityType}
                       </span>
                       {log.student && (
-                        <div className="text-xs text-gray-500 mt-1">{log.student.name}</div>
+                        <div className="text-[10px] text-brand-silver mt-1 font-bold italic">{log.student.name}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
+                      <span className={`px-2 py-1 text-[10px] font-black uppercase rounded-full ${
                         log.action === "created" ? "bg-green-100 text-green-800" :
                         log.action === "updated" ? "bg-blue-100 text-blue-800" :
                         log.action === "deleted" ? "bg-red-100 text-red-800" :
                         log.action === "refunded" ? "bg-orange-100 text-orange-800" :
                         "bg-gray-100 text-gray-800"
                       }`}>
-                        {log.action}
+                        {log.action === "created" ? "Eklendi" :
+                         log.action === "updated" ? "Güncellendi" :
+                         log.action === "deleted" ? "Silindi" :
+                         log.action === "refunded" ? "İade Edildi" : log.action}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-brand-muted italic">
                       {log.description}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{log.user.name}</div>
-                      <div className="text-xs text-gray-500">{log.user.email}</div>
-                      <div className="text-xs text-gray-400">{log.user.role}</div>
+                      <div className="text-sm font-bold text-brand-dark">{log.user.name}</div>
+                      <div className="text-[10px] text-brand-silver">{log.user.email}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-brand-primary hover:text-brand-logo font-bold text-xs uppercase transition-colors"
                       >
-                        View Details
+                        İncele
                       </button>
                     </td>
                   </tr>
@@ -252,66 +245,70 @@ export default function LogsPage() {
             </table>
           </div>
           {logs.length === 0 && (
-            <div className="text-center py-8 text-gray-500">No logs found</div>
+            <div className="text-center py-12 text-brand-silver font-medium italic">Kayıt bulunamadı.</div>
           )}
         </div>
       </div>
 
-      {/* Log Details Modal */}
+      {/* Log Detay Modalı */}
       {selectedLog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Log Details</h3>
+        <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border-t-8 border-brand-primary">
+            <div className="p-8">
+              <div className="flex justify-between items-center mb-6 border-b border-brand-silver/10 pb-4">
+                <h3 className="text-xl font-bold text-brand-dark">İşlem Detayları</h3>
                 <button
                   onClick={() => setSelectedLog(null)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-brand-silver hover:text-brand-dark text-2xl transition-colors"
                 >
                   ✕
                 </button>
               </div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Entity Type</label>
-                    <p className="text-gray-900">{selectedLog.entityType}</p>
+                    <label className="text-xs font-black text-brand-muted uppercase tracking-widest">Kategori</label>
+                    <p className="text-brand-dark font-bold capitalize">{selectedLog.entityType}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Entity ID</label>
-                    <p className="text-gray-900">{selectedLog.entityId}</p>
+                    <label className="text-xs font-black text-brand-muted uppercase tracking-widest">İşlem ID</label>
+                    <p className="text-brand-silver font-mono text-xs">{selectedLog.entityId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Action</label>
-                    <p className="text-gray-900">{selectedLog.action}</p>
+                    <label className="text-xs font-black text-brand-muted uppercase tracking-widest">Eylem</label>
+                    <p className="text-brand-dark font-bold capitalize">{selectedLog.action}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Date & Time</label>
-                    <p className="text-gray-900">{new Date(selectedLog.createdAt).toLocaleString()}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Description</label>
-                  <p className="text-gray-900 mt-1">{selectedLog.description}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">User</label>
-                  <div className="text-gray-900 mt-1">
-                    {selectedLog.user.name} ({selectedLog.user.email}) - {selectedLog.user.role}
+                    <label className="text-xs font-black text-brand-muted uppercase tracking-widest">Tarih & Saat</label>
+                    <p className="text-brand-dark font-bold">{new Date(selectedLog.createdAt).toLocaleString('tr-TR')}</p>
                   </div>
                 </div>
-                {selectedLog.student && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Student</label>
-                    <div className="text-gray-900 mt-1">
-                      {selectedLog.student.name} ({selectedLog.student.email})
+                <div className="bg-brand-ghost p-4 rounded-xl">
+                  <label className="text-xs font-black text-brand-muted uppercase tracking-widest">Açıklama</label>
+                  <p className="text-brand-dark mt-1 italic font-medium">"{selectedLog.description}"</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="border border-brand-silver/10 p-3 rounded-lg">
+                      <label className="text-xs font-black text-brand-muted uppercase tracking-widest">Yönetici</label>
+                      <div className="text-brand-dark text-sm mt-1">
+                        <span className="font-bold">{selectedLog.user.name}</span> <br/>
+                        <span className="text-xs text-brand-silver">{selectedLog.user.email}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                    {selectedLog.student && (
+                      <div className="border border-brand-silver/10 p-3 rounded-lg">
+                        <label className="text-xs font-black text-brand-muted uppercase tracking-widest">İlgili Öğrenci</label>
+                        <div className="text-brand-dark text-sm mt-1">
+                          <span className="font-bold">{selectedLog.student.name}</span> <br/>
+                          <span className="text-xs text-brand-silver">{selectedLog.student.email}</span>
+                        </div>
+                      </div>
+                    )}
+                </div>
                 {selectedLog.metadata && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Metadata</label>
-                    <pre className="mt-1 p-4 bg-gray-100 rounded-md overflow-x-auto text-sm">
+                    <label className="text-xs font-black text-brand-muted uppercase tracking-widest block mb-2">Teknik Detaylar (JSON)</label>
+                    <pre className="p-4 bg-brand-dark text-brand-primary rounded-xl overflow-x-auto text-xs font-mono shadow-inner">
                       {JSON.stringify(selectedLog.metadata, null, 2)}
                     </pre>
                   </div>
@@ -322,5 +319,4 @@ export default function LogsPage() {
         </div>
       )}
     </div>
-  )
-}
+  )}

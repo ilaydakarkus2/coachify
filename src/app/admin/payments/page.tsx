@@ -393,9 +393,15 @@ export default function PaymentsPage() {
                 <form onSubmit={handleEditSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-brand-muted mb-1">Tutar ($)</label>
-                      <input type="number" step="0.01" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.amount} onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })} />
-                    </div>
+  <label className="block text-sm font-bold text-brand-muted mb-1">Tutar (₺)</label>
+  <input 
+    type="number" 
+    step="0.01" 
+    className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" 
+    value={editFormData.amount} 
+    onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })} 
+  />
+</div>
                     <div>
                       <label className="block text-sm font-bold text-brand-muted mb-1">Hafta</label>
                       <input type="number" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.weeks} onChange={(e) => setEditFormData({ ...editFormData, weeks: e.target.value })} />
