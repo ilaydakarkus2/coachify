@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma, getAdminUserId } from "@/lib/prisma"
+import { finalizeMentorEarningForAssignment } from "@/lib/mentor-earnings"
 
 // Tip tanımını buraya ekleyelim (Next.js 15 standartı)
 type RouteParams = { params: Promise<{ id: string }> };
@@ -105,6 +106,48 @@ export async function PATCH(
       where: { id: id },
       data: updateData
     })
+
+    // Ogrenci birakma veya iade durumunda mentor hakedislerini otomatik hesapla
+    if (updateData.status === "dropped" || updateData.status === "refunded") {
+      const activeAssignments = await prisma.studentAssignment.findMany({
+        where: { studentId: id, endDate: null }
+      })
+
+      if (activeAssignments.length > 0) {
+        const dropDate = new Date()
+        const adminId = await getAdminUserId()
+        const triggerReason = updateData.status === "dropped" ? "student_drop" : "student_refund"
+
+        await prisma.$transaction(async (tx) => {
+          for (const assignment of activeAssignments) {
+            // Atamayi sonlandir
+            await tx.studentAssignment.update({
+              where: { id: assignment.id },
+              data: { endDate: dropDate }
+            })
+
+            // Mentor hakedisini hesapla ve kaydet
+            await finalizeMentorEarningForAssignment(
+              tx,
+              assignment.id,
+              assignment.mentorId,
+              id,
+              assignment.startDate,
+              dropDate,
+              triggerReason,
+              adminId,
+              currentStudent.startDate
+            )
+          }
+
+          // Ogrenci bitis tarihini guncelle
+          await tx.student.update({
+            where: { id },
+            data: { endDate: dropDate }
+          })
+        })
+      }
+    }
 
     // Log the update
     try {

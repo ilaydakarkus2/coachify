@@ -10,9 +10,11 @@ async function main() {
 
   // Clean up existing data
   await prisma.log.deleteMany();
+  await prisma.mentorEarning.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.studentAssignment.deleteMany();
   await prisma.student.deleteMany();
+  await prisma.systemConfig.deleteMany();
   await prisma.mentor.deleteMany();
   await prisma.user.deleteMany();
 
@@ -226,6 +228,96 @@ async function main() {
     ],
   });
   console.log('Created sample payments');
+
+  // Create SystemConfig
+  await prisma.systemConfig.create({
+    data: {
+      key: 'WEEKLY_MENTOR_RATE',
+      value: '375',
+      notes: 'Haftalık mentor ödeme tutarı (TL)',
+    },
+  });
+  console.log('Created SystemConfig: WEEKLY_MENTOR_RATE = 375');
+
+  // Create sample MentorEarning records
+  const allAssignments = await prisma.studentAssignment.findMany();
+  await prisma.mentorEarning.createMany({
+    data: [
+      // Ahmet (student[0]) - Efe ile 2025-02-02'den beri. UBG=2 (1-15 arasi => 15'inde odeme)
+      // 15 Subat: ~1.8 hafta => 1 tam hafta => 375 TL
+      {
+        mentorId: efeMentor!.id,
+        studentId: allStudents[0].id,
+        assignmentId: allAssignments[0].id,
+        completedWeeks: 1,
+        amount: 375,
+        cycleDate: new Date('2025-02-15'),
+        status: 'paid',
+        triggerReason: 'periodic_calc',
+        assignmentStart: new Date('2025-02-02'),
+        assignmentEnd: new Date('2025-02-15'),
+        createdBy: adminUser!.id,
+      },
+      // 1 Mart: ~3.8 hafta => 3 tam hafta => 1125 TL
+      {
+        mentorId: efeMentor!.id,
+        studentId: allStudents[0].id,
+        assignmentId: allAssignments[0].id,
+        completedWeeks: 3,
+        amount: 1125,
+        cycleDate: new Date('2025-03-01'),
+        status: 'paid',
+        triggerReason: 'periodic_calc',
+        assignmentStart: new Date('2025-02-02'),
+        assignmentEnd: new Date('2025-03-01'),
+        createdBy: adminUser!.id,
+      },
+      // 15 Mart: ~5.8 hafta => 5 tam hafta => 1875 TL
+      {
+        mentorId: efeMentor!.id,
+        studentId: allStudents[0].id,
+        assignmentId: allAssignments[0].id,
+        completedWeeks: 5,
+        amount: 1875,
+        cycleDate: new Date('2025-03-15'),
+        status: 'pending',
+        triggerReason: 'periodic_calc',
+        assignmentStart: new Date('2025-02-02'),
+        assignmentEnd: new Date('2025-03-15'),
+        createdBy: adminUser!.id,
+      },
+      // Elif (student[1]) - Ayse ile 2025-02-05'ten beri. UBG=5 => 15'inde
+      {
+        mentorId: ayseMentor!.id,
+        studentId: allStudents[1].id,
+        assignmentId: allAssignments[1].id,
+        completedWeeks: 5,
+        amount: 1875,
+        cycleDate: new Date('2025-03-15'),
+        status: 'pending',
+        triggerReason: 'periodic_calc',
+        assignmentStart: new Date('2025-02-05'),
+        assignmentEnd: new Date('2025-03-15'),
+        createdBy: adminUser!.id,
+      },
+      // Onur (student[6]) - Efe ile 12-18 Mart arasi => 0 tam hafta => kayit olusturmuyoruz
+      // Zeynep C. (student[5]) - Mehmet ile 8-20 Mart arasi => 1 tam hafta => 375 TL
+      {
+        mentorId: mehmetMentor!.id,
+        studentId: allStudents[5].id,
+        assignmentId: allAssignments[5].id,
+        completedWeeks: 1,
+        amount: 375,
+        cycleDate: new Date('2025-03-15'),
+        status: 'paid',
+        triggerReason: 'student_drop',
+        assignmentStart: new Date('2025-03-08'),
+        assignmentEnd: new Date('2025-03-20'),
+        createdBy: adminUser!.id,
+      },
+    ],
+  });
+  console.log('Created sample MentorEarning records');
 
   console.log('Seed completed successfully!');
 }

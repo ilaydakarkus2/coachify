@@ -33,7 +33,7 @@ export default function LoginPage() {
         if (userRole === "admin") {
           router.push("/admin")
         } else if (userRole === "mentor") {
-          router.push("/customer/mentors")
+          router.push("/mentor")
         } else {
           router.push("/customer")
         }
