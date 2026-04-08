@@ -197,31 +197,31 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
+    <div className="min-h-screen bg-brand-ghost">
+      {/* Üst Bar (Header) */}
+      <div className="bg-brand-dark shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <Link href="/admin">
-            <h1 className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors">
-              Admin Dashboard
-            </h1>
-          </Link>
-            <div className="flex gap-4">
-              <Link href="/admin/mentors" className="text-blue-600 hover:text-blue-800">
-                Mentors
+              <h1 className="text-2xl font-bold text-white cursor-pointer hover:text-brand-primary transition-colors">
+                Coachify <span className="text-brand-primary">Admin</span>
+              </h1>
+            </Link>
+            <div className="flex gap-4 items-center">
+              <Link href="/admin/mentors" className="text-brand-sand hover:text-white transition-colors">
+                Mentorlar
               </Link>
-              <Link href="/admin/assignments" className="text-blue-600 hover:text-blue-800">
-                Assignments
+              <Link href="/admin/assignments" className="text-brand-sand hover:text-white transition-colors">
+                Atamalar
               </Link>
-              <Link href="/admin/payments" className="text-blue-600 hover:text-blue-800">
-                Payments
+              <Link href="/admin/payments" className="text-brand-sand hover:text-white transition-colors">
+                Ödemeler
               </Link>
-              <Link href="/admin/logs" className="text-blue-600 hover:text-blue-800">
-                Logs
+              <Link href="/admin/logs" className="text-brand-sand hover:text-white transition-colors">
+                Kayıtlar
               </Link>
-              <button onClick={() => router.push("/login")} className="text-red-600 hover:text-red-800">
-                Logout
+              <button onClick={() => router.push("/login")} className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium transition-all">
+                Çıkış
               </button>
             </div>
           </div>
@@ -230,37 +230,37 @@ export default function StudentsPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Students</h2>
+          <h2 className="text-2xl font-bold text-brand-dark">Öğrenciler</h2>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className={`${showForm ? 'bg-brand-muted' : 'bg-brand-logo'} text-white px-5 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-brand-logo/20`}
           >
-            {showForm ? "Cancel" : "Add Student"}
+            {showForm ? "Vazgeç" : "+ Yeni Öğrenci"}
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Filtreler */}
+        <div className="bg-brand-sand p-5 rounded-2xl shadow-sm border border-brand-silver/20 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Durum</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
               >
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="dropped">Dropped</option>
-                <option value="refunded">Refunded</option>
+                <option value="">Tüm Durumlar</option>
+                <option value="active">Aktif</option>
+                <option value="dropped">Bırakan</option>
+                <option value="refunded">İade</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Arama</label>
               <input
                 type="text"
-                placeholder="Search by name or email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="İsim veya e-posta ile ara..."
+                className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               />
@@ -268,301 +268,170 @@ export default function StudentsPage() {
           </div>
         </div>
 
-        {/* Create Student Form */}
+        {/* Yeni Öğrenci Formu Modalı */}
         {showForm && (
-          <form onSubmit={handleCreateSubmit} className="bg-white p-6 rounded-lg shadow mb-6">
-            <h3 className="text-lg font-semibold mb-4">Create New Student</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input
-                  type="email"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">School *</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.school}
-                  onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Grade *</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.grade}
-                  onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
-                <input
-                  type="date"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
-                >
-                  Create Student
-                </button>
-              </div>
-            </div>
-          </form>
-        )}
-
-        {/* Edit Student Form Modal */}
-        {showEditForm && selectedStudent && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">Edit Student</h3>
-                  <button
-                    onClick={() => {
-                      setShowEditForm(false)
-                      setSelectedStudent(null)
-                    }}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ✕
-                  </button>
+          <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-t-8 border-brand-logo">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-brand-dark">Yeni Öğrenci Kaydı</h3>
+                  <button onClick={() => setShowForm(false)} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">✕</button>
                 </div>
-                <form onSubmit={handleEditSubmit}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.name}
-                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <input
-                        type="email"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.email}
-                        onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.phone}
-                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">School</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.school}
-                        onChange={(e) => setEditFormData({ ...editFormData, school: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.grade}
-                        onChange={(e) => setEditFormData({ ...editFormData, grade: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.startDate}
-                        onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.endDate}
-                        onChange={(e) => setEditFormData({ ...editFormData, endDate: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.status}
-                        onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                      >
-                        <option value="active">Active</option>
-                        <option value="dropped">Dropped</option>
-                        <option value="refunded">Refunded</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
-                      <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editFormData.paymentStatus}
-                        onChange={(e) => setEditFormData({ ...editFormData, paymentStatus: e.target.value })}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="paid">Paid</option>
-                        <option value="refunded">Refunded</option>
-                      </select>
-                    </div>
+                <form onSubmit={handleCreateSubmit} className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="md:col-span-2">
-                      <button
-                        type="submit"
-                        className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
-                      >
-                        Update Student
-                      </button>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Ad Soyad *</label>
+                        <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">E-posta *</label>
+                        <input type="email" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Telefon *</label>
+                        <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Okul *</label>
+                        <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.school} onChange={(e) => setFormData({ ...formData, school: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Sınıf *</label>
+                        <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Başlangıç Tarihi *</label>
+                        <input type="date" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Bitiş Tarihi</label>
+                        <input type="date" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
                     </div>
                   </div>
+                  <button type="submit" className="w-full bg-brand-logo text-white py-4 rounded-xl font-bold hover:bg-brand-dark transition-all shadow-lg shadow-brand-logo/20">Öğrenciyi Kaydet</button>
                 </form>
               </div>
             </div>
           </div>
         )}
 
-        {/* Students Table */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+        {/* Düzenleme Formu Modalı */}
+        {showEditForm && selectedStudent && (
+          <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-t-8 border-brand-primary">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-brand-dark">Öğrenciyi Düzenle</h3>
+                  <button onClick={() => { setShowEditForm(false); setSelectedStudent(null); }} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">✕</button>
+                </div>
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Ad Soyad</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">E-posta</label>
+                        <input type="email" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.email} onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Telefon</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.phone} onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Okul</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.school} onChange={(e) => setEditFormData({ ...editFormData, school: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.grade} onChange={(e) => setEditFormData({ ...editFormData, grade: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Başlangıç Tarihi</label>
+                        <input type="date" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.startDate} onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Bitiş Tarihi</label>
+                        <input type="date" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.endDate} onChange={(e) => setEditFormData({ ...editFormData, endDate: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Durum</label>
+                        <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.status} onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}>
+                          <option value="active">Aktif</option>
+                          <option value="dropped">Bırakan</option>
+                          <option value="refunded">İade</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Ödeme Durumu</label>
+                        <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.paymentStatus} onChange={(e) => setEditFormData({ ...editFormData, paymentStatus: e.target.value })}>
+                          <option value="pending">Bekliyor</option>
+                          <option value="paid">Ödendi</option>
+                          <option value="refunded">İade Edildi</option>
+                        </select>
+                    </div>
+                  </div>
+                  <button type="submit" className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-4 shadow-lg shadow-brand-primary/20">Güncelle</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Öğrenciler Tablosu */}
+        <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-brand-silver/10">
+              <thead className="bg-brand-ghost">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    School/Grade
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mentor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Dates
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">E-posta</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul / Sınıf</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Mentor</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tarihler</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Ödeme</th>
+                  <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">İşlemler</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-brand-silver/5">
                 {students.map((student) => (
-                  <tr key={student.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                      <div className="text-sm text-gray-500">{student.phone}</div>
+                  <tr key={student.id} className="hover:bg-brand-sand/30 transition-colors">
+                    <td className="px-6 py-5 whitespace-nowrap">
+                      <div className="text-sm font-bold text-brand-dark">{student.name}</div>
+                      <div className="text-xs text-brand-muted">{student.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {student.email}
+                    <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">{student.email}</td>
+                    <td className="px-6 py-5 whitespace-nowrap">
+                      <div className="text-sm font-bold text-brand-dark">{student.school}</div>
+                      <div className="text-xs text-brand-muted">{student.grade}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{student.school}</div>
-                      <div className="text-sm text-gray-500">{student.grade}</div>
+                    <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-brand-logo">
+                      {student.studentAssignments.length > 0 ? student.studentAssignments[0].mentor.name : "Atanmadı"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {student.studentAssignments.length > 0
-                        ? student.studentAssignments[0].mentor.name
-                        : "Not assigned"}
+                    <td className="px-6 py-5 whitespace-nowrap text-[11px] text-brand-dark font-medium">
+                      <div>{new Date(student.startDate).toLocaleDateString('tr-TR')}</div>
+                      {student.endDate && <div className="text-brand-silver italic">{new Date(student.endDate).toLocaleDateString('tr-TR')} bitiş</div>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>{new Date(student.startDate).toLocaleDateString()}</div>
-                      {student.endDate && (
-                        <div className="text-gray-500">to {new Date(student.endDate).toLocaleDateString()}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        student.status === "active" ? "bg-green-100 text-green-800" :
-                        student.status === "dropped" ? "bg-yellow-100 text-yellow-800" :
-                        "bg-red-100 text-red-800"
+                    <td className="px-6 py-5 whitespace-nowrap">
+                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
+                        student.status === "active" ? "bg-brand-primary/10 text-brand-logo border border-brand-primary/20" :
+                        student.status === "dropped" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"
                       }`}>
-                        {student.status}
+                        {student.status === "active" ? "Aktif" : student.status === "dropped" ? "Bıraktı" : "İade"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        student.paymentStatus === "paid" ? "bg-green-100 text-green-800" :
-                        student.paymentStatus === "refunded" ? "bg-red-100 text-red-800" :
-                        "bg-yellow-100 text-yellow-800"
+                    <td className="px-6 py-5 whitespace-nowrap">
+                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
+                        student.paymentStatus === "paid" ? "bg-green-100 text-green-700" :
+                        student.paymentStatus === "refunded" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
                       }`}>
-                        {student.paymentStatus}
+                        {student.paymentStatus === "paid" ? "Ödendi" : student.paymentStatus === "refunded" ? "İade" : "Bekliyor"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => openEditForm(student)}
-                        className="text-blue-600 hover:text-blue-900 mr-2"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(student.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                    <td className="px-6 py-5 whitespace-nowrap text-right space-x-3">
+                      <button onClick={() => openEditForm(student)} className="text-brand-primary hover:text-brand-logo font-bold text-xs uppercase transition-colors">Düzenle</button>
+                      <button onClick={() => handleDelete(student.id)} className="text-red-400 hover:text-red-600 font-bold text-xs uppercase transition-colors">Sil</button>
                     </td>
                   </tr>
                 ))}
@@ -570,10 +439,9 @@ export default function StudentsPage() {
             </table>
           </div>
           {students.length === 0 && (
-            <div className="text-center py-8 text-gray-500">No students found</div>
+            <div className="text-center py-12 text-brand-silver font-medium italic">Öğrenci bulunamadı.</div>
           )}
         </div>
       </div>
     </div>
-  )
-}
+  );}
