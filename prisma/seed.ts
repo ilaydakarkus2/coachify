@@ -10,9 +10,11 @@ async function main() {
 
   // Clean up existing data
   await prisma.log.deleteMany();
+  await prisma.mentorEarning.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.studentAssignment.deleteMany();
   await prisma.student.deleteMany();
+  await prisma.systemConfig.deleteMany();
   await prisma.mentor.deleteMany();
   await prisma.user.deleteMany();
 
@@ -226,6 +228,84 @@ async function main() {
     ],
   });
   console.log('Created sample payments');
+
+  // Create SystemConfig
+  await prisma.systemConfig.create({
+    data: {
+      key: 'WEEKLY_MENTOR_RATE',
+      value: '375',
+      notes: 'Haftalık mentor ödeme tutarı (TL)',
+    },
+  });
+  console.log('Created SystemConfig: WEEKLY_MENTOR_RATE = 375');
+
+  // Create sample MentorEarning records
+  const allAssignments = await prisma.studentAssignment.findMany();
+  await prisma.mentorEarning.createMany({
+    data: [
+      // Ahmet (student[0]) - Efe ile 2025-02-02'den beri. UBG=2 (1-15 arasi)
+      // Yeni kural: "takip eden donem" = bir sonraki ayin 15'i
+      // Donem 1 (15 Mart): 2 Subat - 15 Mart = 41 gun = 5 tam hafta = 1875 TL
+      {
+        mentorId: efeMentor!.id,
+        studentId: allStudents[0].id,
+        assignmentId: allAssignments[0].id,
+        completedWeeks: 5,
+        amount: 1875,
+        cycleDate: new Date('2025-03-15'),
+        status: 'paid',
+        triggerReason: 'periodic_calc',
+        assignmentStart: new Date('2025-02-02'),
+        assignmentEnd: new Date('2025-03-15'),
+        createdBy: adminUser!.id,
+      },
+      // Donem 2 (1 Nisan): 2 Subat - 1 Nisan = 58 gun = 8 tam hafta. Increment: 8-5=3 hafta = 1125 TL
+      {
+        mentorId: efeMentor!.id,
+        studentId: allStudents[0].id,
+        assignmentId: allAssignments[0].id,
+        completedWeeks: 3,
+        amount: 1125,
+        cycleDate: new Date('2025-04-01'),
+        status: 'pending',
+        triggerReason: 'periodic_calc',
+        assignmentStart: new Date('2025-02-02'),
+        assignmentEnd: new Date('2025-04-01'),
+        createdBy: adminUser!.id,
+      },
+      // Elif (student[1]) - Ayse ile 2025-02-05'ten beri. UBG=5 (1-15 arasi)
+      // Donem 1 (15 Mart): 5 Subat - 15 Mart = 38 gun = 5 tam hafta = 1875 TL
+      {
+        mentorId: ayseMentor!.id,
+        studentId: allStudents[1].id,
+        assignmentId: allAssignments[1].id,
+        completedWeeks: 5,
+        amount: 1875,
+        cycleDate: new Date('2025-03-15'),
+        status: 'pending',
+        triggerReason: 'periodic_calc',
+        assignmentStart: new Date('2025-02-05'),
+        assignmentEnd: new Date('2025-03-15'),
+        createdBy: adminUser!.id,
+      },
+      // Zeynep C. (student[5]) - Mehmet ile 8-20 Mart arasi = 12 gun = 1 tam hafta = 375 TL
+      // UBG=8 (1-15 arasi) => "takip eden donem" 15 Nisan, ama bırakma olduğu için getNextPaymentDate(8 Mart, 20 Mart) = 15 Nisan
+      {
+        mentorId: mehmetMentor!.id,
+        studentId: allStudents[5].id,
+        assignmentId: allAssignments[5].id,
+        completedWeeks: 1,
+        amount: 375,
+        cycleDate: new Date('2025-04-15'),
+        status: 'paid',
+        triggerReason: 'student_drop',
+        assignmentStart: new Date('2025-03-08'),
+        assignmentEnd: new Date('2025-03-20'),
+        createdBy: adminUser!.id,
+      },
+    ],
+  });
+  console.log('Created sample MentorEarning records');
 
   console.log('Seed completed successfully!');
 }

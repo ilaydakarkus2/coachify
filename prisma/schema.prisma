@@ -5,8 +5,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -35,6 +36,7 @@ model Mentor {
   // Relations
   studentAssignments StudentAssignment[]
   payments           Payment[]
+  mentorEarnings     MentorEarning[]
 }
 
 model Student {
@@ -52,9 +54,13 @@ model Student {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
+  membershipStartDate DateTime @default(now())
+  purchaseDate        DateTime @default(now())
+
   // Relations
   studentAssignments StudentAssignment[]
   payments           Payment[]
+  mentorEarnings     MentorEarning[]
   logs               Log[]
 }
 
@@ -71,6 +77,9 @@ model StudentAssignment {
   updatedAt   DateTime @updatedAt
 
   @@unique([studentId, mentorId, startDate])
+
+  // Relations
+  mentorEarnings MentorEarning[]
 }
 
 model Payment {
@@ -92,6 +101,42 @@ model Payment {
   updatedAt   DateTime @updatedAt
 
   @@index([mentorId, paymentDate])
+}
+
+model MentorEarning {
+  id              String   @id @default(uuid())
+  mentorId        String
+  mentor          Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assignmentId    String
+  assignment      StudentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  completedWeeks  Int
+  amount          Float
+  cycleDate       DateTime
+  status          String   @default("pending") // "pending", "paid", "cancelled"
+
+  triggerReason   String   // "assignment_end", "student_drop", "student_refund", "periodic_calc", "manual"
+  assignmentStart DateTime
+  assignmentEnd   DateTime?
+
+  notes           String?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([studentId, mentorId, cycleDate])
+  @@index([mentorId, status])
+  @@index([cycleDate])
+  @@index([mentorId, cycleDate])
+}
+
+model SystemConfig {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+  notes String?
 }
 
 model Log {

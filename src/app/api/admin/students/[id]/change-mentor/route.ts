@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma, getAdminUserId } from "@/lib/prisma"
+import { finalizeMentorEarningForAssignment } from "@/lib/mentor-earnings"
 
 export async function POST(
   request: NextRequest,
@@ -60,13 +61,29 @@ export async function POST(
       // End all active assignments for this student
       await tx.studentAssignment.updateMany({
         where: {
-          studentId: studentId, // Güncellendi
+          studentId: studentId,
           endDate: null
         },
         data: {
           endDate: new Date()
         }
       })
+
+      // Finalize mentor earnings for ended assignments
+      const endDate = new Date()
+      for (const assignment of student.studentAssignments) {
+        await finalizeMentorEarningForAssignment(
+          tx,
+          assignment.id,
+          assignment.mentorId,
+          student.id,
+          assignment.startDate,
+          endDate,
+          "assignment_end",
+          adminUserId,
+          student.startDate
+        )
+      }
 
       // Log ended assignments
       for (const assignment of student.studentAssignments) {

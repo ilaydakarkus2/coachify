@@ -205,8 +205,8 @@ export default function AssignmentsPage() {
               <Link href="/admin/students" className="text-brand-sand hover:text-white transition-colors">
                 Öğrenciler
               </Link>
-              <Link href="/admin/payments" className="text-brand-sand hover:text-white transition-colors">
-                Ödemeler
+              <Link href="/admin/mentor-earnings" className="text-brand-sand hover:text-white transition-colors">
+                Mentor Kazançları
               </Link>
               <Link href="/admin/logs" className="text-brand-sand hover:text-white transition-colors">
                 Kayıtlar

@@ -96,8 +96,8 @@ export default function LogsPage() {
               <Link href="/admin/assignments" className="text-brand-sand hover:text-white transition-colors">
                 Atamalar
               </Link>
-              <Link href="/admin/payments" className="text-brand-sand hover:text-white transition-colors">
-                Ödemeler
+              <Link href="/admin/mentor-earnings" className="text-brand-sand hover:text-white transition-colors">
+                Mentor Kazançları
               </Link>
               <button onClick={() => router.push("/login")} className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium transition-all">
                 Çıkış
