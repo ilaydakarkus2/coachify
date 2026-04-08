@@ -138,8 +138,20 @@ export async function POST(
       success: true,
       message: `Successfully changed mentor for ${student.name} to ${newMentor.name}`
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error changing mentor:", error)
-    return NextResponse.json({ error: "Failed to change mentor" }, { status: 500 })
+
+    // Prisma Unique Constraint (P2002) hatasını yakalıyoruz
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: "Bu öğrenci zaten seçilen tarihte bu mentora atanmış. Lütfen farklı bir tarih veya mentor seçin." },
+        { status: 400 } // 500 yerine 400 (Bad Request) dönüyoruz
+      )
+    }
+
+    return NextResponse.json(
+      { error: "Mentor değişikliği sırasında bir hata oluştu." }, 
+      { status: 500 }
+    )
   }
 }
