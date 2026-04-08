@@ -1,26 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --logo: #00804f;
+  --primary: #41c193;
+  --dark: #1d4355;
+  --muted: #365b6d;
+  --silver: #bdbcbc;
+  --sand: #f2f1ec;
+  --ghost: #f7f7f7;
+  
+  --background: var(--ghost);
+  --foreground: var(--dark);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-brand-logo: var(--logo);
+  --color-brand-primary: var(--primary);
+  --color-brand-dark: var(--dark);
+  --color-brand-muted: var(--muted);
+  --color-brand-silver: var(--silver);
+  --color-brand-sand: var(--sand);
+  --color-brand-ghost: var(--ghost);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* SAKIN BURAYA DARK MODE MEDİA QUERY EKLEME */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
