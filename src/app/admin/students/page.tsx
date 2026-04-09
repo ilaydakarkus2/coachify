@@ -425,10 +425,6 @@ export default function StudentsPage() {
                         <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.phone} onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })} />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1">Okul</label>
-                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.school} onChange={(e) => setEditFormData({ ...editFormData, school: e.target.value })} />
-                    </div>
-                    <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf</label>
                         <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.grade} onChange={(e) => setEditFormData({ ...editFormData, grade: e.target.value })} />
                     </div>
@@ -485,6 +481,7 @@ export default function StudentsPage() {
                           <option value="">Belirtilmedi</option>
                           <option value="student">Öğrenci</option>
                           <option value="parent">Veli</option>
+                          <option value="both">Hem Öğrenci Hem Veli</option>
                         </select>
                     </div>
                     <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
@@ -552,13 +549,13 @@ export default function StudentsPage() {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">E-posta</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul / Sınıf</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Sınıf</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Mentor</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Veli</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Puan</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tarihler</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Ödeme</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">İletişim</th>
                   <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">İşlemler</th>
                 </tr>
               </thead>
@@ -571,8 +568,7 @@ export default function StudentsPage() {
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">{student.email}</td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="text-sm font-bold text-brand-dark">{student.school}</div>
-                      <div className="text-xs text-brand-muted">{student.grade}</div>
+                      <span className="px-3 py-1 text-xs font-bold bg-brand-primary/10 text-brand-logo rounded-full">{student.grade}</span>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-brand-logo">
                       {student.studentAssignments.length > 0 ? student.studentAssignments[0].mentor.name : "Atanmadı"}
@@ -580,11 +576,6 @@ export default function StudentsPage() {
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="text-sm text-brand-dark">{student.parentName || "-"}</div>
                       <div className="text-xs text-brand-muted">{student.parentPhone || ""}</div>
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark">
-                      {student.currentNetScore != null || student.targetNetScore != null ? (
-                        <span>{student.currentNetScore ?? "-"} → {student.targetNetScore ?? "-"}</span>
-                      ) : "-"}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-[11px] text-brand-dark font-medium">
                       <div>{new Date(student.startDate).toLocaleDateString('tr-TR')}</div>
@@ -613,7 +604,20 @@ export default function StudentsPage() {
                         {student.paymentStatus === "paid" ? "Ödendi" : student.paymentStatus === "refunded" ? "İade" : "Bekliyor"}
                       </span>
                     </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-right space-x-3">
+                    <td className="px-6 py-5 whitespace-nowrap text-[11px]">
+	                      <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-full ${
+	                        student.contactPreference === "both" ? "bg-blue-100 text-blue-700" :
+	                        student.contactPreference === "parent" ? "bg-purple-100 text-purple-700" :
+	                        student.contactPreference === "student" ? "bg-brand-primary/10 text-brand-logo" :
+	                        "bg-gray-100 text-gray-400"
+	                      }`}>
+	                        {student.contactPreference === "both" ? "Hem Öğr. Hem Veli" :
+	                         student.contactPreference === "parent" ? "Veli" :
+	                         student.contactPreference === "student" ? "Öğrenci" :
+	                         "Belirtilmedi"}
+	                      </span>
+	                    </td>
+	                    <td className="px-6 py-5 whitespace-nowrap text-right space-x-3">
                       <button onClick={() => openEditForm(student)} className="text-brand-primary hover:text-brand-logo font-bold text-xs uppercase transition-colors">Düzenle</button>
                       {student.status === "active" && (
                         <button onClick={() => openExtendForm(student)} className="text-green-600 hover:text-green-800 font-bold text-xs uppercase transition-colors">Ek Süre</button>

@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useCallback } from "react"
 import AdminNav from "@/components/AdminNav"
 
 interface MentorEarning {
@@ -39,11 +38,9 @@ interface Mentor {
 }
 
 export default function MentorEarningsPage() {
-    const [earnings, setEarnings] = useState<MentorEarning[]>([])
+  const [earnings, setEarnings] = useState<MentorEarning[]>([])
   const [mentors, setMentors] = useState<Mentor[]>([])
   const [loading, setLoading] = useState(true)
-  const [calculating, setCalculating] = useState(false)
-  const [message, setMessage] = useState("")
   const [filters, setFilters] = useState({
     status: "",
     mentorId: "",
@@ -53,13 +50,7 @@ export default function MentorEarningsPage() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 20
 
-  useEffect(() => {
-    setPage(1)
-    fetchEarnings()
-    fetchMentors()
-  }, [filters])
-
-  const fetchEarnings = async () => {
+  const fetchEarnings = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (filters.status) params.append("status", filters.status)
@@ -71,13 +62,13 @@ export default function MentorEarningsPage() {
       const data = await res.json()
       setEarnings(data)
     } catch (error) {
-      console.error("Kazançlar getirilemedi:", error)
+      console.error("Kazanclar getirilemedi:", error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
-  const fetchMentors = async () => {
+  const fetchMentors = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/mentors")
       const data = await res.json()
@@ -85,65 +76,65 @@ export default function MentorEarningsPage() {
     } catch (error) {
       console.error("Mentorlar getirilemedi:", error)
     }
-  }
+  }, [])
 
-  const handleCalculate = async () => {
-    setCalculating(true)
-    setMessage("")
+  const runCalculation = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/mentor-earnings/calculate", { method: "POST" })
-      const data = await res.json()
       if (res.ok) {
-        setMessage(`${data.createdCount} yeni hakediş kaydı oluşturuldu`)
         fetchEarnings()
-      } else {
-        setMessage("Hesaplama başarısız: " + data.error)
       }
     } catch (error) {
-      setMessage("Hesaplama sırasında hata oluştu")
-    } finally {
-      setCalculating(false)
+      console.error("Arka plan hesaplamasi basarisiz:", error)
     }
-  }
+  }, [fetchEarnings])
+
+  // Initial load: fetch data fast, then calculate in background
+  useEffect(() => {
+    fetchEarnings().then(() => runCalculation())
+    fetchMentors()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Filter changes: just re-fetch (no recalculation)
+  useEffect(() => {
+    setPage(1)
+    fetchEarnings()
+  }, [fetchEarnings])
 
   const handleMarkAsPaid = async (id: string) => {
-    if (!confirm("Bu hakedisi ödendi olarak işaretlemek istediğinize emin misiniz?")) return
+    if (!confirm("Bu hakedisi odendi olarak isaretlemek istediginize emin misiniz?")) return
     try {
       const res = await fetch(`/api/admin/mentor-earnings/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "paid" })
       })
-      if (res.ok) {
-        fetchEarnings()
-      }
+      if (res.ok) fetchEarnings()
     } catch (error) {
-      console.error("Durum güncellenemedi:", error)
+      console.error("Durum guncellenemedi:", error)
     }
   }
 
   const handleCancel = async (id: string) => {
-    if (!confirm("Bu hakedisi iptal etmek istediğinize emin misiniz?")) return
+    if (!confirm("Bu hakedisi iptal etmek istediginize emin misiniz?")) return
     try {
       const res = await fetch(`/api/admin/mentor-earnings/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "cancelled" })
       })
-      if (res.ok) {
-        fetchEarnings()
-      }
+      if (res.ok) fetchEarnings()
     } catch (error) {
-      console.error("Durum güncellenemedi:", error)
+      console.error("Durum guncellenemedi:", error)
     }
   }
 
   const triggerLabel = (reason: string) => {
     const map: Record<string, string> = {
-      assignment_end: "Mentor Değişimi",
-      student_drop: "Öğrenci Bırakma",
-      student_refund: "İade",
-      student_refund_14day: "14 Gün İade",
+      assignment_end: "Mentor Degisimi",
+      student_drop: "Ogrenci Birakma",
+      student_refund: "Iade",
+      student_refund_14day: "14 Gun Iade",
       periodic_calc: "Periyodik Hesaplama",
       manual: "Manuel"
     }
@@ -158,8 +149,8 @@ export default function MentorEarningsPage() {
     }
     const labels: Record<string, string> = {
       pending: "Bekliyor",
-      paid: "Ödendi",
-      cancelled: "İptal"
+      paid: "Odendi",
+      cancelled: "Iptal"
     }
     return (
       <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${styles[status] || "bg-gray-100 text-gray-700"}`}>
@@ -168,56 +159,41 @@ export default function MentorEarningsPage() {
     )
   }
 
-  // Ozet hesapla
   const totalPending = earnings.filter(e => e.status === "pending").reduce((s, e) => s + e.amount, 0)
   const totalPaid = earnings.filter(e => e.status === "paid").reduce((s, e) => s + e.amount, 0)
   const totalAll = earnings.reduce((s, e) => s + e.amount, 0)
 
   if (loading) {
-    return <div className="p-8">Yükleniyor...</div>
+    return <div className="p-8">Yukleniyor...</div>
   }
 
   return (
     <div className="min-h-screen bg-brand-ghost">
-      {/* Ust Bar */}
       <AdminNav />
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-brand-dark">Mentor Kazançları (Hakediş)</h2>
-          <button
-            onClick={handleCalculate}
-            disabled={calculating}
-            className={`${calculating ? "bg-brand-muted" : "bg-brand-logo"} text-white px-5 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-brand-logo/20`}
-          >
-            {calculating ? "Hesaplanıyor..." : "Hesapla"}
-          </button>
+          <h2 className="text-2xl font-bold text-brand-dark">Mentor Kazanclari (Hakedis)</h2>
         </div>
-
-        {message && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 font-medium">
-            {message}
-          </div>
-        )}
 
         {/* Ozet Kartlari */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-1">Toplam Hakediş</div>
+            <div className="text-sm font-bold text-brand-muted mb-1">Toplam Hakedis</div>
             <div className="text-2xl font-black text-brand-dark">
-              {totalAll.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+              {totalAll.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
             </div>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-1">Bekleyen Ödeme</div>
+            <div className="text-sm font-bold text-brand-muted mb-1">Bekleyen Odeme</div>
             <div className="text-2xl font-black text-yellow-600">
-              {totalPending.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+              {totalPending.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
             </div>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-1">Ödenen</div>
+            <div className="text-sm font-bold text-brand-muted mb-1">Odenen</div>
             <div className="text-2xl font-black text-green-600">
-              {totalPaid.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+              {totalPaid.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
             </div>
           </div>
         </div>
@@ -232,10 +208,10 @@ export default function MentorEarningsPage() {
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
               >
-                <option value="">Tüm Durumlar</option>
+                <option value="">Tum Durumlar</option>
                 <option value="pending">Bekliyor</option>
-                <option value="paid">Ödendi</option>
-                <option value="cancelled">İptal</option>
+                <option value="paid">Odendi</option>
+                <option value="cancelled">Iptal</option>
               </select>
             </div>
             <div>
@@ -245,14 +221,14 @@ export default function MentorEarningsPage() {
                 value={filters.mentorId}
                 onChange={(e) => setFilters({ ...filters, mentorId: e.target.value })}
               >
-                <option value="">Tüm Mentorlar</option>
+                <option value="">Tum Mentorlar</option>
                 {mentors.map((mentor) => (
                   <option key={mentor.id} value={mentor.id}>{mentor.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold text-brand-muted mb-1.5">Dönem Başlangıç</label>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Donem Baslangic</label>
               <input
                 type="date"
                 className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
@@ -261,7 +237,7 @@ export default function MentorEarningsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-brand-muted mb-1.5">Dönem Bitiş</label>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Donem Bitis</label>
               <input
                 type="date"
                 className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
@@ -279,13 +255,13 @@ export default function MentorEarningsPage() {
               <thead className="bg-brand-ghost">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Mentor</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Ogrenci</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Hafta</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tutar</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Dönem Tarihi</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Donem Tarihi</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tetikleyici</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
-                  <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">İşlemler</th>
+                  <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">Islemler</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-brand-silver/5">
@@ -303,7 +279,7 @@ export default function MentorEarningsPage() {
                       {earning.completedWeeks} Hafta
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-brand-dark">
-                      {earning.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                      {earning.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">
                       {new Date(earning.cycleDate).toLocaleDateString('tr-TR')}
@@ -322,7 +298,7 @@ export default function MentorEarningsPage() {
                           onClick={() => handleMarkAsPaid(earning.id)}
                           className="text-green-600 hover:text-green-800 font-bold text-xs uppercase transition-colors"
                         >
-                          Öde
+                          Ode
                         </button>
                       )}
                       {earning.status === "pending" && (
@@ -330,7 +306,7 @@ export default function MentorEarningsPage() {
                           onClick={() => handleCancel(earning.id)}
                           className="text-red-400 hover:text-red-600 font-bold text-xs uppercase transition-colors"
                         >
-                          İptal
+                          Iptal
                         </button>
                       )}
                     </td>
@@ -341,13 +317,13 @@ export default function MentorEarningsPage() {
           </div>
           {earnings.length === 0 && (
             <div className="text-center py-12 text-brand-silver font-medium italic">
-              Hakediş kaydı bulunamadı. &quot;Hesapla&quot; butonuna basarak mevcut atamaları tarayabilirsiniz.
+              Hakedis kaydi bulunamadi.
             </div>
           )}
           {earnings.length > PAGE_SIZE && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-brand-silver/10 bg-brand-ghost">
               <p className="text-sm text-brand-muted">
-                {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, earnings.length)} / {earnings.length} kayıt
+                {((page - 1) * PAGE_SIZE) + 1}&ndash;{Math.min(page * PAGE_SIZE, earnings.length)} / {earnings.length} kayit
               </p>
               <div className="flex gap-2">
                 <button
@@ -355,7 +331,7 @@ export default function MentorEarningsPage() {
                   disabled={page === 1}
                   className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  Önceki
+                  Onceki
                 </button>
                 {Array.from({ length: Math.ceil(earnings.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
                   <button
