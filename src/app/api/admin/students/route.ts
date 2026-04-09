@@ -65,7 +65,10 @@ export async function POST(request: NextRequest) {
     // Fixed the line below where the import was stuck to the end of the line
     const body = await request.json(); 
     
-    const { name, email, phone, school, grade, startDate, endDate, mentorId } = body;
+    const { name, email, phone, school, grade, startDate, endDate, mentorId,
+            parentName, parentPhone, currentNetScore, targetNetScore,
+            specialNote, membershipType, discountCode, stripeId,
+            contactPreference, sendMessage } = body;
 
     if (!name || !email || !phone || !school || !grade || !startDate) {
       return NextResponse.json(
@@ -85,6 +88,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const startDt = new Date(startDate)
     const student = await prisma.student.create({
       data: {
         name,
@@ -92,9 +96,31 @@ export async function POST(request: NextRequest) {
         phone,
         school,
         grade,
-        startDate: new Date(startDate),
+        startDate: startDt,
         endDate: endDate ? new Date(endDate) : null,
-        purchaseDate: new Date()
+        purchaseDate: new Date(),
+        // Veli bilgileri
+        parentName: parentName || null,
+        parentPhone: parentPhone || null,
+        // Puan takibi
+        currentNetScore: currentNetScore || null,
+        targetNetScore: targetNetScore || null,
+        // Takip ve notlar
+        specialNote: specialNote || null,
+        // Tally formu
+        membershipType: membershipType || "new",
+        discountCode: discountCode || null,
+        // Stripe
+        stripeId: stripeId || null,
+        // İletişim tercihi
+        contactPreference: contactPreference || null,
+        // Mesaj
+        sendMessage: sendMessage || false,
+        // Hesaplamalar
+        daySAG: new Date().getDate(),
+        dayUBG: startDt.getDate(),
+        monthUBG: startDt.toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
+        monthBSO: startDt.toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
       }
     });
 

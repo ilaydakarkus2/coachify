@@ -80,6 +80,12 @@ export async function POST(request: NextRequest) {
             currentMentor: currentMentor?.name || null,
             mentorEmail: currentMentor?.email || null,
             packageDuration: s.packageDuration,
+            parentName: s.parentName,
+            parentPhone: s.parentPhone,
+            contactPreference: s.contactPreference,
+            sendMessage: s.sendMessage,
+            membershipType: s.membershipType,
+            specialNote: s.specialNote,
           }
         })
         break
@@ -118,6 +124,12 @@ export async function POST(request: NextRequest) {
             currentMentor: currentMentor?.name || null,
             mentorEmail: currentMentor?.email || null,
             packageDuration: s.packageDuration,
+            parentName: s.parentName,
+            parentPhone: s.parentPhone,
+            contactPreference: s.contactPreference,
+            sendMessage: s.sendMessage,
+            membershipType: s.membershipType,
+            specialNote: s.specialNote,
           }
         })
         break
@@ -154,6 +166,12 @@ export async function POST(request: NextRequest) {
             currentMentor: currentMentor?.name || null,
             mentorEmail: currentMentor?.email || null,
             packageDuration: s.packageDuration,
+            parentName: s.parentName,
+            parentPhone: s.parentPhone,
+            contactPreference: s.contactPreference,
+            sendMessage: s.sendMessage,
+            membershipType: s.membershipType,
+            specialNote: s.specialNote,
           }
         })
         break

@@ -78,7 +78,11 @@ export async function PATCH(
 
     console.log("[API] PATCH /api/admin/students/[id] - Updating student:", id)
     const body = await request.json()
-    const { name, email, phone, school, grade, startDate, endDate, status, paymentStatus } = body
+    const { name, email, phone, school, grade, startDate, endDate, status, paymentStatus,
+            parentName, parentPhone, currentNetScore, targetNetScore,
+            specialNote, dropReason, refundStatus, mentorChangeNote,
+            droppedMonth, searchDay, searchMonth, contactPreference,
+            sendMessage, membershipType, discountCode, stripeId } = body
 
     // Get current student for comparison
     const currentStudent = await prisma.student.findUnique({
@@ -100,6 +104,23 @@ export async function PATCH(
     if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null
     if (status) updateData.status = status
     if (paymentStatus) updateData.paymentStatus = paymentStatus
+    // Yeni alanlar
+    if (parentName !== undefined) updateData.parentName = parentName || null
+    if (parentPhone !== undefined) updateData.parentPhone = parentPhone || null
+    if (currentNetScore !== undefined) updateData.currentNetScore = currentNetScore || null
+    if (targetNetScore !== undefined) updateData.targetNetScore = targetNetScore || null
+    if (specialNote !== undefined) updateData.specialNote = specialNote || null
+    if (dropReason !== undefined) updateData.dropReason = dropReason || null
+    if (refundStatus !== undefined) updateData.refundStatus = refundStatus || null
+    if (mentorChangeNote !== undefined) updateData.mentorChangeNote = mentorChangeNote || null
+    if (droppedMonth !== undefined) updateData.droppedMonth = droppedMonth || null
+    if (searchDay !== undefined) updateData.searchDay = searchDay || null
+    if (searchMonth !== undefined) updateData.searchMonth = searchMonth || null
+    if (contactPreference !== undefined) updateData.contactPreference = contactPreference || null
+    if (sendMessage !== undefined) updateData.sendMessage = sendMessage
+    if (membershipType !== undefined) updateData.membershipType = membershipType || null
+    if (discountCode !== undefined) updateData.discountCode = discountCode || null
+    if (stripeId !== undefined) updateData.stripeId = stripeId || null
 
     // Update student
     const student = await prisma.student.update({

@@ -4,6 +4,15 @@ import { google } from "googleapis"
  * Google Sheets API v4 servisi.
  * Service account ile authenticate olur.
  * Sheets sync fire-and-forget seklinde calisir, HTTP response'u etkilemez.
+ *
+ * Kolon haritası (A-W):
+ * A: name, B: email, C: phone, D: school, E: grade
+ * F: startDate, G: packageDuration, H: mentor, I: status
+ * J: membershipStartDate, K: Last Updated
+ * L: parentName, M: parentPhone, N: currentNetScore, O: targetNetScore
+ * P: specialNote, Q: dropReason, R: refundStatus
+ * S: membershipType, T: discountCode, U: stripeId
+ * V: contactPreference, W: sendMessage
  */
 
 interface StudentRow {
@@ -17,6 +26,18 @@ interface StudentRow {
   mentor: string
   status: string
   membershipStartDate: string
+  parentName?: string
+  parentPhone?: string
+  currentNetScore?: number | null
+  targetNetScore?: number | null
+  specialNote?: string
+  dropReason?: string
+  refundStatus?: string
+  membershipType?: string
+  discountCode?: string
+  stripeId?: string
+  contactPreference?: string
+  sendMessage?: boolean
 }
 
 let sheetsAuth: any = null
@@ -56,17 +77,29 @@ function getSheetId(): string {
 
 function toRowValues(row: StudentRow): string[] {
   return [
-    row.name,
-    row.email,
-    row.phone,
-    row.school,
-    row.grade,
-    row.startDate,
-    String(row.packageDuration),
-    row.mentor,
-    row.status,
-    row.membershipStartDate,
-    new Date().toISOString(),
+    row.name,                                      // A
+    row.email,                                     // B
+    row.phone,                                     // C
+    row.school,                                    // D
+    row.grade,                                     // E
+    row.startDate,                                 // F
+    String(row.packageDuration),                   // G
+    row.mentor,                                    // H
+    row.status,                                    // I
+    row.membershipStartDate,                       // J
+    new Date().toISOString(),                      // K - Last Updated
+    row.parentName || "",                          // L
+    row.parentPhone || "",                         // M
+    row.currentNetScore != null ? String(row.currentNetScore) : "", // N
+    row.targetNetScore != null ? String(row.targetNetScore) : "",   // O
+    row.specialNote || "",                         // P
+    row.dropReason || "",                          // Q
+    row.refundStatus || "",                        // R
+    row.membershipType || "",                      // S
+    row.discountCode || "",                        // T
+    row.stripeId || "",                            // U
+    row.contactPreference || "",                   // V
+    row.sendMessage ? "true" : "false",            // W
   ]
 }
 
@@ -75,7 +108,7 @@ export async function appendStudentRow(student: StudentRow): Promise<void> {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: getSheetId(),
-    range: "A:K",
+    range: "A:W",
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: {
@@ -93,7 +126,7 @@ export async function updateStudentRow(
   // Tum veriyi al, email'e gore satir bul
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: getSheetId(),
-    range: "A:K",
+    range: "A:W",
   })
 
   const rows = response.data.values
@@ -107,8 +140,9 @@ export async function updateStudentRow(
   }
 
   // Mevcut satiri guncelle
-  const currentRow = rows[rowIndex]
-  const newRow = [...currentRow]
+  const currentRow = [...rows[rowIndex]]
+  // Eksik kolonları doldur
+  while (currentRow.length < 23) currentRow.push("")
 
   const fieldToColumn: Record<string, number> = {
     name: 0,
@@ -121,21 +155,34 @@ export async function updateStudentRow(
     mentor: 7,
     status: 8,
     membershipStartDate: 9,
+    parentName: 11,
+    parentPhone: 12,
+    currentNetScore: 13,
+    targetNetScore: 14,
+    specialNote: 15,
+    dropReason: 16,
+    refundStatus: 17,
+    membershipType: 18,
+    discountCode: 19,
+    stripeId: 20,
+    contactPreference: 21,
+    sendMessage: 22,
   }
 
   for (const [field, colIndex] of Object.entries(fieldToColumn)) {
     if ((updates as any)[field] !== undefined) {
-      newRow[colIndex] = String((updates as any)[field])
+      const val = (updates as any)[field]
+      currentRow[colIndex] = val != null ? String(val) : ""
     }
   }
-  newRow[10] = new Date().toISOString() // Last Updated
+  currentRow[10] = new Date().toISOString() // Last Updated
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: getSheetId(),
-    range: `A${rowIndex + 1}:K${rowIndex + 1}`,
+    range: `A${rowIndex + 1}:W${rowIndex + 1}`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
-      values: [newRow],
+      values: [currentRow],
     },
   })
 }

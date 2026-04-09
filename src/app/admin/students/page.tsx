@@ -15,6 +15,21 @@ interface Student {
   endDate: string | null
   status: string
   paymentStatus: string
+  parentName?: string | null
+  parentPhone?: string | null
+  currentNetScore?: number | null
+  targetNetScore?: number | null
+  specialNote?: string | null
+  dropReason?: string | null
+  refundStatus?: string | null
+  mentorChangeNote?: string | null
+  droppedMonth?: string | null
+  searchDay?: string | null
+  searchMonth?: string | null
+  contactPreference?: string | null
+  sendMessage?: boolean
+  membershipType?: string | null
+  discountCode?: string | null
   studentAssignments: Array<{
     mentor: {
       id: string
@@ -43,7 +58,15 @@ export default function StudentsPage() {
     grade: "",
     startDate: "",
     endDate: "",
-    mentorId: ""
+    mentorId: "",
+    parentName: "",
+    parentPhone: "",
+    currentNetScore: "",
+    targetNetScore: "",
+    specialNote: "",
+    contactPreference: "",
+    membershipType: "new",
+    discountCode: "",
   })
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -54,7 +77,18 @@ export default function StudentsPage() {
     startDate: "",
     endDate: "",
     status: "",
-    paymentStatus: ""
+    paymentStatus: "",
+    parentName: "",
+    parentPhone: "",
+    currentNetScore: "",
+    targetNetScore: "",
+    specialNote: "",
+    dropReason: "",
+    refundStatus: "",
+    contactPreference: "",
+    sendMessage: false,
+    membershipType: "",
+    discountCode: "",
   })
   const [filters, setFilters] = useState({
     status: "",
@@ -118,7 +152,15 @@ export default function StudentsPage() {
         grade: "",
         startDate: "",
         endDate: "",
-        mentorId: ""
+        mentorId: "",
+        parentName: "",
+        parentPhone: "",
+        currentNetScore: "",
+        targetNetScore: "",
+        specialNote: "",
+        contactPreference: "",
+        membershipType: "new",
+        discountCode: "",
       })
       fetchStudents()
     } catch (error) {
@@ -239,7 +281,18 @@ export default function StudentsPage() {
       startDate: student.startDate.split("T")[0],
       endDate: student.endDate ? student.endDate.split("T")[0] : "",
       status: student.status,
-      paymentStatus: student.paymentStatus
+      paymentStatus: student.paymentStatus,
+      parentName: student.parentName || "",
+      parentPhone: student.parentPhone || "",
+      currentNetScore: student.currentNetScore?.toString() || "",
+      targetNetScore: student.targetNetScore?.toString() || "",
+      specialNote: student.specialNote || "",
+      dropReason: student.dropReason || "",
+      refundStatus: student.refundStatus || "",
+      contactPreference: student.contactPreference || "",
+      sendMessage: student.sendMessage || false,
+      membershipType: student.membershipType || "",
+      discountCode: student.discountCode || "",
     })
     setShowEditForm(true)
     console.log("[Frontend] Edit form opened")
@@ -360,6 +413,51 @@ export default function StudentsPage() {
                         <label className="block text-sm font-bold text-brand-muted mb-1.5">Bitiş Tarihi</label>
                         <input type="date" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
                     </div>
+                    <div className="md:col-span-2 border-t border-brand-silver/30 pt-4 mt-1">
+                        <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-3">Veli & İletişim</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Veli Adı Soyadı</label>
+                        <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentName} onChange={(e) => setFormData({ ...formData, parentName: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Veli Telefonu</label>
+                        <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentPhone} onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">İletişim Tercihi</label>
+                        <select className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.contactPreference} onChange={(e) => setFormData({ ...formData, contactPreference: e.target.value })}>
+                          <option value="">Belirtilmedi</option>
+                          <option value="student">Öğrenci</option>
+                          <option value="parent">Veli</option>
+                        </select>
+                    </div>
+                    <div className="md:col-span-2 border-t border-brand-silver/30 pt-4 mt-1">
+                        <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-3">Puan & Notlar</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Mevcut Net Puanı</label>
+                        <input type="number" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.currentNetScore} onChange={(e) => setFormData({ ...formData, currentNetScore: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Hedef Net Puanı</label>
+                        <input type="number" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.targetNetScore} onChange={(e) => setFormData({ ...formData, targetNetScore: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Üyelik Türü</label>
+                        <select className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.membershipType} onChange={(e) => setFormData({ ...formData, membershipType: e.target.value })}>
+                          <option value="new">Yeni</option>
+                          <option value="renewal">Yenileme</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">İndirim Kodu</label>
+                        <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.discountCode} onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Özel Açıklama</label>
+                        <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialNote} onChange={(e) => setFormData({ ...formData, specialNote: e.target.value })} />
+                    </div>
                   </div>
                   <button type="submit" className="w-full bg-brand-logo text-white py-4 rounded-xl font-bold hover:bg-brand-dark transition-all shadow-lg shadow-brand-logo/20">Öğrenciyi Kaydet</button>
                 </form>
@@ -423,6 +521,68 @@ export default function StudentsPage() {
                           <option value="refunded">İade Edildi</option>
                         </select>
                     </div>
+                    <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
+                        <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-2">Veli & İletişim</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Veli Adı Soyadı</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.parentName} onChange={(e) => setEditFormData({ ...editFormData, parentName: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Veli Telefonu</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.parentPhone} onChange={(e) => setEditFormData({ ...editFormData, parentPhone: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">İletişim Tercihi</label>
+                        <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.contactPreference} onChange={(e) => setEditFormData({ ...editFormData, contactPreference: e.target.value })}>
+                          <option value="">Belirtilmedi</option>
+                          <option value="student">Öğrenci</option>
+                          <option value="parent">Veli</option>
+                        </select>
+                    </div>
+                    <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
+                        <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-2">Puan & Notlar</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Mevcut Net Puanı</label>
+                        <input type="number" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.currentNetScore} onChange={(e) => setEditFormData({ ...editFormData, currentNetScore: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Hedef Net Puanı</label>
+                        <input type="number" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.targetNetScore} onChange={(e) => setEditFormData({ ...editFormData, targetNetScore: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Üyelik Türü</label>
+                        <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.membershipType} onChange={(e) => setEditFormData({ ...editFormData, membershipType: e.target.value })}>
+                          <option value="">Belirtilmedi</option>
+                          <option value="new">Yeni</option>
+                          <option value="renewal">Yenileme</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">İndirim Kodu</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.discountCode} onChange={(e) => setEditFormData({ ...editFormData, discountCode: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Özel Açıklama</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.specialNote} onChange={(e) => setEditFormData({ ...editFormData, specialNote: e.target.value })} />
+                    </div>
+                    {editFormData.status === "dropped" && (
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Bırakma Nedeni</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.dropReason} onChange={(e) => setEditFormData({ ...editFormData, dropReason: e.target.value })} />
+                    </div>
+                    )}
+                    {editFormData.paymentStatus === "refunded" && (
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">İade Durumu</label>
+                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.refundStatus} onChange={(e) => setEditFormData({ ...editFormData, refundStatus: e.target.value })} />
+                    </div>
+                    )}
+                    <div className="md:col-span-2 flex items-center gap-3">
+                      <input type="checkbox" id="sendMessage" checked={editFormData.sendMessage} onChange={(e) => setEditFormData({ ...editFormData, sendMessage: e.target.checked })} className="w-4 h-4 rounded border-brand-silver text-brand-primary focus:ring-brand-primary" />
+                      <label htmlFor="sendMessage" className="text-sm font-bold text-brand-muted">Mesaj Gidecek</label>
+                    </div>
                   </div>
                   <button type="submit" className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-4 shadow-lg shadow-brand-primary/20">Güncelle</button>
                 </form>
@@ -441,6 +601,8 @@ export default function StudentsPage() {
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">E-posta</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul / Sınıf</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Mentor</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Veli</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Puan</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tarihler</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Ödeme</th>
@@ -461,6 +623,15 @@ export default function StudentsPage() {
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-brand-logo">
                       {student.studentAssignments.length > 0 ? student.studentAssignments[0].mentor.name : "Atanmadı"}
+                    </td>
+                    <td className="px-6 py-5 whitespace-nowrap">
+                      <div className="text-sm text-brand-dark">{student.parentName || "-"}</div>
+                      <div className="text-xs text-brand-muted">{student.parentPhone || ""}</div>
+                    </td>
+                    <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark">
+                      {student.currentNetScore != null || student.targetNetScore != null ? (
+                        <span>{student.currentNetScore ?? "-"} → {student.targetNetScore ?? "-"}</span>
+                      ) : "-"}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-[11px] text-brand-dark font-medium">
                       <div>{new Date(student.startDate).toLocaleDateString('tr-TR')}</div>

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   let mentor = student.studentAssignments[0]?.mentor || null
 
   if (body.mentorEmail) {
-    const newMentor = await prisma.mentor.findUnique({
+    const newMentor = await prisma.mentor.findFirst({
       where: { email: body.mentorEmail },
     })
     if (!newMentor) {
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
           newStartDate,
           "periodic_calc",
           adminUserId,
-          student.startDate
+          student.purchaseDate ?? student.startDate
         )
       }
 
@@ -111,7 +111,17 @@ export async function POST(request: NextRequest) {
           paymentStatus: "pending",
           packageDuration: body.newPackageDuration || student.packageDuration,
           membershipStartDate: newStartDate,
-          purchaseDate: body.renewalDate ? new Date(body.renewalDate) : new Date(),
+          // purchaseDate (SAG) değişmez — yenileme sırasında sabit kalır
+          // Yenileme bilgileri
+          membershipType: "renewal",
+          discountCode: body.discountCode || student.discountCode,
+          stripeId: body.stripeId || student.stripeId,
+          contactPreference: body.contactPreference || student.contactPreference,
+          specialNote: body.specialNote || student.specialNote,
+          // Hesaplamalar
+          dayUBG: newStartDate.getDate(),
+          monthUBG: newStartDate.toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
+          monthBSO: newStartDate.toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
         },
       })
 
@@ -154,6 +164,11 @@ export async function POST(request: NextRequest) {
           membershipStartDate: newStartDate.toISOString().split("T")[0],
           packageDuration: body.newPackageDuration || student.packageDuration,
           mentor: mentor.name,
+          membershipType: "renewal",
+          discountCode: body.discountCode || student.discountCode || undefined,
+          stripeId: body.stripeId || student.stripeId || undefined,
+          contactPreference: body.contactPreference || student.contactPreference || undefined,
+          specialNote: body.specialNote || student.specialNote || undefined,
         })
       } catch (sheetsError) {
         console.error("[SHEETS] Failed to update student row:", sheetsError)

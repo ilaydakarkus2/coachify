@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Mentor bul
-  const mentor = await prisma.mentor.findUnique({
+  const mentor = await prisma.mentor.findFirst({
     where: { email: body.mentorEmail },
   })
   if (!mentor) {
@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      const startDate = new Date(body.startDate)
+
       // Student olustur
       const student = await tx.student.create({
         data: {
@@ -68,14 +70,38 @@ export async function POST(request: NextRequest) {
           phone: body.phone,
           school: body.school,
           grade: body.grade,
-          startDate: new Date(body.startDate),
+          startDate,
           status: "active",
           paymentStatus: "pending",
           packageDuration: body.packageDuration || 4,
           purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : new Date(),
           membershipStartDate: body.membershipStartDate
             ? new Date(body.membershipStartDate)
-            : new Date(body.startDate),
+            : startDate,
+          // Veli bilgileri
+          parentName: body.parentName || null,
+          parentPhone: body.parentPhone || null,
+          // Puan takibi
+          currentNetScore: body.currentNetScore || null,
+          targetNetScore: body.targetNetScore || null,
+          // Takip ve notlar
+          specialNote: body.specialNote || null,
+          // Tally formu
+          membershipType: body.membershipType || "new",
+          discountCode: body.discountCode || null,
+          // Stripe
+          stripeId: body.stripeId || null,
+          // İletişim tercihi
+          contactPreference: body.contactPreference || null,
+          // Mesaj
+          sendMessage: body.sendMessage || false,
+          // Hesaplamalar
+          daySAG: body.purchaseDate ? new Date(body.purchaseDate).getDate() : new Date().getDate(),
+          dayUBG: startDate.getDate(),
+          monthUBG: startDate.toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
+          monthBSO: body.membershipStartDate
+            ? new Date(body.membershipStartDate).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })
+            : startDate.toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
         },
       })
 
@@ -84,7 +110,7 @@ export async function POST(request: NextRequest) {
         data: {
           studentId: student.id,
           mentorId: mentor.id,
-          startDate: new Date(body.startDate),
+          startDate,
         },
       })
 
@@ -127,6 +153,16 @@ export async function POST(request: NextRequest) {
           mentor: mentor.name,
           status: result.student.status,
           membershipStartDate: result.student.membershipStartDate.toISOString().split("T")[0],
+          parentName: result.student.parentName || undefined,
+          parentPhone: result.student.parentPhone || undefined,
+          currentNetScore: result.student.currentNetScore,
+          targetNetScore: result.student.targetNetScore,
+          specialNote: result.student.specialNote || undefined,
+          membershipType: result.student.membershipType || undefined,
+          discountCode: result.student.discountCode || undefined,
+          stripeId: result.student.stripeId || undefined,
+          contactPreference: result.student.contactPreference || undefined,
+          sendMessage: result.student.sendMessage,
         })
       } catch (sheetsError) {
         console.error("[SHEETS] Failed to append student row:", sheetsError)

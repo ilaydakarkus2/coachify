@@ -57,6 +57,47 @@ model Student {
   membershipStartDate DateTime @default(now())
   purchaseDate        DateTime @default(now())
 
+  // Veli bilgileri
+  parentName        String?
+  parentPhone       String?
+
+  // Puan takibi
+  currentNetScore   Int?
+  targetNetScore    Int?
+
+  // Takip ve notlar
+  specialNote       String?        // Özel Açıklama
+  dropReason        String?        // Bırakma Nedeni
+  refundStatus      String?        // İade Durumu
+  mentorChangeNote  String?        // Mentor Değişimi
+
+  // Takip tarihleri
+  droppedMonth      String?        // Bıraktığı Ay
+  searchDay         String?        // Aranma Günü
+  searchMonth       String?        // Aranma Ayı
+
+  // Hesaplamalar
+  daySAG            Int?           // SAG gün sayısı (1-31)
+  dayUBG            Int?           // UBG gün sayısı (1-31)
+  monthUBG          String?        // ÜB Ay
+  monthBSO          String?        // BSÖ Ayı
+
+  // Tally formu
+  membershipType    String?        // "new" / "renewal"
+  discountCode      String?        // İndirim kodu
+
+  // Stripe
+  stripeId          String?        // Stripe Customer ID
+
+  // İletişim tercihi
+  contactPreference String?        // "Kime İletilsin" (öğrenci/veli)
+
+  // Mesaj
+  sendMessage       Boolean @default(false)  // Mesaj Gidecek Mi
+
+  // Google Sheets referans
+  sheetRowNumber    Int?           // Sheets satır numarası
+
   // Relations
   studentAssignments StudentAssignment[]
   payments           Payment[]
