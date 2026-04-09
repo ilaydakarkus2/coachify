@@ -105,9 +105,22 @@ export async function POST(
       }
 
       // Create new assignment
+      // Aynı studentId+mentorId+startDate ile bitmiş bir kayıt varsa sil
+      const existingConflict = await tx.studentAssignment.findFirst({
+        where: {
+          studentId: studentId,
+          mentorId: newMentorId,
+          startDate: new Date(startDate),
+          endDate: { not: null }
+        }
+      })
+      if (existingConflict) {
+        await tx.studentAssignment.delete({ where: { id: existingConflict.id } })
+      }
+
       const newAssignment = await tx.studentAssignment.create({
         data: {
-          studentId: studentId, // Güncellendi
+          studentId: studentId,
           mentorId: newMentorId,
           startDate: new Date(startDate),
           notes: notes || null

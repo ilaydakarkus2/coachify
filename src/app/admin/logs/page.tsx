@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import AdminNav from "@/components/AdminNav"
 
 interface Log {
   id: string
@@ -26,8 +26,7 @@ interface Log {
 }
 
 export default function LogsPage() {
-  const router = useRouter()
-  const [logs, setLogs] = useState<Log[]>([])
+    const [logs, setLogs] = useState<Log[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedLog, setSelectedLog] = useState<Log | null>(null)
   const [filters, setFilters] = useState({
@@ -37,8 +36,11 @@ export default function LogsPage() {
     endDate: "",
     limit: "50"
   })
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   useEffect(() => {
+    setPage(1)
     fetchLogs()
   }, [filters])
 
@@ -78,34 +80,7 @@ export default function LogsPage() {
   return (
     <div className="min-h-screen bg-brand-ghost">
       {/* Üst Bar (Header) */}
-      <div className="bg-brand-dark shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <Link href="/admin">
-              <h1 className="text-2xl font-bold text-white cursor-pointer hover:text-brand-primary transition-colors">
-                Coachify <span className="text-brand-primary">Admin</span>
-              </h1>
-            </Link>
-            <div className="flex gap-4 items-center">
-              <Link href="/admin/mentors" className="text-brand-sand hover:text-white transition-colors">
-                Mentorlar
-              </Link>
-              <Link href="/admin/students" className="text-brand-sand hover:text-white transition-colors">
-                Öğrenciler
-              </Link>
-              <Link href="/admin/assignments" className="text-brand-sand hover:text-white transition-colors">
-                Atamalar
-              </Link>
-              <Link href="/admin/mentor-earnings" className="text-brand-sand hover:text-white transition-colors">
-                Mentor Kazançları
-              </Link>
-              <button onClick={() => router.push("/login")} className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium transition-all">
-                Çıkış
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminNav />
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <h2 className="text-2xl font-bold text-brand-dark mb-6">İşlem Kayıtları</h2>
@@ -188,7 +163,7 @@ export default function LogsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-brand-silver/5">
-                {logs.map((log) => (
+                {logs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((log) => (
                   <tr key={log.id} className="hover:bg-brand-sand/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-dark font-medium">
                       {new Date(log.createdAt).toLocaleString('tr-TR')}
@@ -246,6 +221,42 @@ export default function LogsPage() {
           </div>
           {logs.length === 0 && (
             <div className="text-center py-12 text-brand-silver font-medium italic">Kayıt bulunamadı.</div>
+          )}
+          {logs.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-brand-silver/10 bg-brand-ghost">
+              <p className="text-sm text-brand-muted">
+                {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, logs.length)} / {logs.length} kayıt
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Önceki
+                </button>
+                {Array.from({ length: Math.ceil(logs.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`px-3.5 py-2 text-sm font-bold rounded-lg border transition-all ${
+                      p === page
+                        ? 'bg-brand-logo text-white border-brand-logo'
+                        : 'border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage(p => Math.min(Math.ceil(logs.length / PAGE_SIZE), p + 1))}
+                  disabled={page >= Math.ceil(logs.length / PAGE_SIZE)}
+                  className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Sonraki
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

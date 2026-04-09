@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     switch (body.query) {
       case "expiring_soon": {
         const daysAhead = filters.daysAhead || 7
+        const sendMessageOnly = filters.sendMessageOnly === true
         const now = new Date()
         const futureDate = new Date(now)
         futureDate.setDate(futureDate.getDate() + daysAhead)
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
           where: {
             status: "active",
             endDate: { not: null, gte: now, lte: futureDate },
+            ...(sendMessageOnly ? { sendMessage: true } : {}),
           },
           include: {
             studentAssignments: {
@@ -183,7 +185,7 @@ export async function POST(request: NextRequest) {
       entityType: "student",
       entityId: "query",
       action: "queried",
-      description: `Zapier webhook: CRM sorgu - ${body.query} (${data.length} results)`,
+      description: `Zapier webhook: CRM sorgu - ${body.query} (${data.length} sonuç)`,
       userId: adminUserId,
       metadata: { source: "zapier_webhook", flow: "query", queryType: body.query, resultCount: data.length },
     })

@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
           entityType: "mentor",
           entityId: mentor.id,
           action: "created",
-          description: `Yeni mentor olusturuldu: ${name}`,
+          description: `Yeni mentor oluşturuldu: ${name}`,
           userId: adminUserId,
           metadata: { name, email, specialty }
         }

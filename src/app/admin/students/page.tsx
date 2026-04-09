@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import AdminNav from "@/components/AdminNav"
 
 interface Student {
   id: string
@@ -89,7 +89,9 @@ export default function StudentsPage() {
     sendMessage: false,
     membershipType: "",
     discountCode: "",
+    mentorId: "",
   })
+  const [editMentorSaving, setEditMentorSaving] = useState(false)
   const [filters, setFilters] = useState({
     status: "",
     search: "",
@@ -100,8 +102,11 @@ export default function StudentsPage() {
   const [extendStudent, setExtendStudent] = useState<Student | null>(null)
   const [extendData, setExtendData] = useState({ weeks: 1, reason: "" })
   const [extendLoading, setExtendLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   useEffect(() => {
+    setPage(1)
     fetchStudents()
   }, [filters])
 
@@ -187,30 +192,51 @@ export default function StudentsPage() {
     console.log("[Frontend] Edit form data:", editFormData)
 
     try {
+      // Mentor değişikliği kontrolü
+      const currentMentorId = selectedStudent.studentAssignments?.[0]?.mentor?.id || ""
+      const newMentorId = editFormData.mentorId
+      const mentorChanged = newMentorId && newMentorId !== currentMentorId
+
+      // Önce öğrenci bilgilerini güncelle (mentorId hariç)
+      const { mentorId, ...studentData } = editFormData
       const res = await fetch(`/api/admin/students/${selectedStudent.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editFormData)
+        body: JSON.stringify(studentData)
       })
-
-      console.log("[Frontend] Response status:", res.status)
 
       if (!res.ok) {
         const errorData = await res.json()
-        console.error("[Frontend] Error response:", errorData)
-        alert(`Failed to update student: ${errorData.error || "Unknown error"}`)
+        alert(`Güncelleme hatası: ${errorData.error || "Bilinmeyen hata"}`)
         return
       }
 
-      const data = await res.json()
-      console.log("[Frontend] Success response:", data)
+      // Mentor değişikliği varsa
+      if (mentorChanged) {
+        setEditMentorSaving(true)
+        const mentorRes = await fetch(`/api/admin/students/${selectedStudent.id}/change-mentor`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            newMentorId,
+            startDate: new Date().toISOString().split("T")[0],
+            notes: selectedStudent.mentorChangeNote || ""
+          })
+        })
+
+        if (!mentorRes.ok) {
+          const errorData = await mentorRes.json()
+          alert(`Öğrenci bilgileri güncellendi ancak mentor değişikliği başarısız: ${errorData.error || "Hata"}`)
+        }
+        setEditMentorSaving(false)
+      }
 
       setShowEditForm(false)
       setSelectedStudent(null)
       fetchStudents()
     } catch (error) {
       console.error("[Frontend] Failed to update student:", error)
-      alert("Failed to update student. Please try again.")
+      alert("Güncelleme başarısız. Tekrar deneyin.")
     }
   }
 
@@ -303,6 +329,7 @@ export default function StudentsPage() {
       sendMessage: student.sendMessage || false,
       membershipType: student.membershipType || "",
       discountCode: student.discountCode || "",
+      mentorId: student.studentAssignments?.[0]?.mentor?.id || "",
     })
     setShowEditForm(true)
     console.log("[Frontend] Edit form opened")
@@ -314,35 +341,7 @@ export default function StudentsPage() {
 
   return (
     <div className="min-h-screen bg-brand-ghost">
-      {/* Üst Bar (Header) */}
-      <div className="bg-brand-dark shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <Link href="/admin">
-              <h1 className="text-2xl font-bold text-white cursor-pointer hover:text-brand-primary transition-colors">
-                Coachify <span className="text-brand-primary">Admin</span>
-              </h1>
-            </Link>
-            <div className="flex gap-4 items-center">
-              <Link href="/admin/mentors" className="text-brand-sand hover:text-white transition-colors">
-                Mentorlar
-              </Link>
-              <Link href="/admin/assignments" className="text-brand-sand hover:text-white transition-colors">
-                Atamalar
-              </Link>
-              <Link href="/admin/mentor-earnings" className="text-brand-sand hover:text-white transition-colors">
-                Mentor Kazançları
-              </Link>
-              <Link href="/admin/logs" className="text-brand-sand hover:text-white transition-colors">
-                Kayıtlar
-              </Link>
-              <button onClick={() => router.push("/login")} className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium transition-all">
-                Çıkış
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminNav />
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
@@ -399,94 +398,7 @@ export default function StudentsPage() {
 
         {/* Yeni Öğrenci Formu Modalı */}
         {showForm && (
-          <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-t-8 border-brand-logo">
-              <div className="p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-brand-dark">Yeni Öğrenci Kaydı</h3>
-                  <button onClick={() => setShowForm(false)} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">✕</button>
-                </div>
-                <form onSubmit={handleCreateSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Ad Soyad *</label>
-                        <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">E-posta *</label>
-                        <input type="email" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Telefon *</label>
-                        <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Okul *</label>
-                        <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.school} onChange={(e) => setFormData({ ...formData, school: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Sınıf *</label>
-                        <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Başlangıç Tarihi *</label>
-                        <input type="date" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Bitiş Tarihi</label>
-                        <input type="date" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
-                    </div>
-                    <div className="md:col-span-2 border-t border-brand-silver/30 pt-4 mt-1">
-                        <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-3">Veli & İletişim</p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Veli Adı Soyadı</label>
-                        <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentName} onChange={(e) => setFormData({ ...formData, parentName: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Veli Telefonu</label>
-                        <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentPhone} onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">İletişim Tercihi</label>
-                        <select className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.contactPreference} onChange={(e) => setFormData({ ...formData, contactPreference: e.target.value })}>
-                          <option value="">Belirtilmedi</option>
-                          <option value="student">Öğrenci</option>
-                          <option value="parent">Veli</option>
-                        </select>
-                    </div>
-                    <div className="md:col-span-2 border-t border-brand-silver/30 pt-4 mt-1">
-                        <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-3">Puan & Notlar</p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Mevcut Net Puanı</label>
-                        <input type="number" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.currentNetScore} onChange={(e) => setFormData({ ...formData, currentNetScore: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Hedef Net Puanı</label>
-                        <input type="number" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.targetNetScore} onChange={(e) => setFormData({ ...formData, targetNetScore: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Üyelik Türü</label>
-                        <select className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.membershipType} onChange={(e) => setFormData({ ...formData, membershipType: e.target.value })}>
-                          <option value="new">Yeni</option>
-                          <option value="renewal">Yenileme</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">İndirim Kodu</label>
-                        <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.discountCode} onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })} />
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-bold text-brand-muted mb-1.5">Özel Açıklama</label>
-                        <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialNote} onChange={(e) => setFormData({ ...formData, specialNote: e.target.value })} />
-                    </div>
-                  </div>
-                  <button type="submit" className="w-full bg-brand-logo text-white py-4 rounded-xl font-bold hover:bg-brand-dark transition-all shadow-lg shadow-brand-logo/20">Öğrenciyi Kaydet</button>
-                </form>
-              </div>
-            </div>
-          </div>
+          <AdminNav />
         )}
 
         {/* Düzenleme Formu Modalı */}
@@ -519,6 +431,18 @@ export default function StudentsPage() {
                     <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf</label>
                         <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.grade} onChange={(e) => setEditFormData({ ...editFormData, grade: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Mentor</label>
+                        <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.mentorId} onChange={(e) => setEditFormData({ ...editFormData, mentorId: e.target.value })}>
+                          <option value="">Mentor Yok</option>
+                          {mentors.map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </select>
+                        {editFormData.mentorId && editFormData.mentorId !== (selectedStudent?.studentAssignments?.[0]?.mentor?.id || "") && (
+                          <p className="text-xs text-amber-600 mt-1 font-medium">Dikkat: Mentor değişikliği eski mentorun hakedişini sonlandırır.</p>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">Başlangıç Tarihi</label>
@@ -596,10 +520,16 @@ export default function StudentsPage() {
                         <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.dropReason} onChange={(e) => setEditFormData({ ...editFormData, dropReason: e.target.value })} />
                     </div>
                     )}
-                    {editFormData.paymentStatus === "refunded" && (
+                    {editFormData.status === "refunded" && (
                     <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">İade Durumu</label>
-                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.refundStatus} onChange={(e) => setEditFormData({ ...editFormData, refundStatus: e.target.value })} />
+                        <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.refundStatus} onChange={(e) => setEditFormData({ ...editFormData, refundStatus: e.target.value })}>
+                          <option value="">Normal İade</option>
+                          <option value="14_gun_tam_iade">14 Gün %100 İade</option>
+                        </select>
+                        {editFormData.refundStatus === "14_gun_tam_iade" && (
+                          <p className="text-xs text-purple-600 mt-1 font-medium">İlk 14 gün — öğrenci tam iade alır, mentor tamamladığı hafta kadar hakediş alır.</p>
+                        )}
                     </div>
                     )}
                     <div className="md:col-span-2 flex items-center gap-3">
@@ -633,7 +563,7 @@ export default function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-brand-silver/5">
-                {students.map((student) => (
+                {students.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((student) => (
                   <tr key={student.id} className="hover:bg-brand-sand/30 transition-colors">
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="text-sm font-bold text-brand-dark">{student.name}</div>
@@ -661,12 +591,19 @@ export default function StudentsPage() {
                       {student.endDate && <div className="text-brand-silver italic">{new Date(student.endDate).toLocaleDateString('tr-TR')} bitiş</div>}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
-                        student.status === "active" ? "bg-brand-primary/10 text-brand-logo border border-brand-primary/20" :
-                        student.status === "dropped" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"
-                      }`}>
-                        {student.status === "active" ? "Aktif" : student.status === "dropped" ? "Bıraktı" : "İade"}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
+                          student.status === "active" ? "bg-brand-primary/10 text-brand-logo border border-brand-primary/20" :
+                          student.status === "dropped" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"
+                        }`}>
+                          {student.status === "active" ? "Aktif" : student.status === "dropped" ? "Bıraktı" : "İade"}
+                        </span>
+                        {student.refundStatus === "14_gun_tam_iade" && (
+                          <span className="px-2 py-0.5 text-[9px] font-bold uppercase rounded bg-purple-100 text-purple-700 w-fit">
+                            14 Gün %100
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
                       <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
@@ -690,6 +627,42 @@ export default function StudentsPage() {
           </div>
           {students.length === 0 && (
             <div className="text-center py-12 text-brand-silver font-medium italic">Öğrenci bulunamadı.</div>
+          )}
+          {students.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-brand-silver/10 bg-brand-ghost">
+              <p className="text-sm text-brand-muted">
+                {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, students.length)} / {students.length} öğrenci
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Önceki
+                </button>
+                {Array.from({ length: Math.ceil(students.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`px-3.5 py-2 text-sm font-bold rounded-lg border transition-all ${
+                      p === page
+                        ? 'bg-brand-logo text-white border-brand-logo'
+                        : 'border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage(p => Math.min(Math.ceil(students.length / PAGE_SIZE), p + 1))}
+                  disabled={page >= Math.ceil(students.length / PAGE_SIZE)}
+                  className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Sonraki
+                </button>
+              </div>
+            </div>
           )}
         </div>
 

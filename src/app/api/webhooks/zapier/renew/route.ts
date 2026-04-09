@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
         entityType: "student",
         entityId: student.id,
         action: "updated",
-        description: `Zapier webhook: uyelik yenileme - ${student.name}`,
+        description: `Zapier webhook: üyelik yenileme - ${student.name}`,
         userId: adminUserId,
         studentId: student.id,
         metadata: {

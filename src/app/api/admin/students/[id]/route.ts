@@ -137,7 +137,21 @@ export async function PATCH(
       if (activeAssignments.length > 0) {
         const dropDate = new Date()
         const adminId = await getAdminUserId()
-        const triggerReason = updateData.status === "dropped" ? "student_drop" : "student_refund"
+
+        // 14 gun iade kontrolu (Brief 4.7)
+        let is14DayRefund = false
+        if (updateData.status === "refunded") {
+          const sag = currentStudent.purchaseDate ?? currentStudent.startDate
+          const daysSinceStart = Math.floor((dropDate.getTime() - sag.getTime()) / (1000 * 60 * 60 * 24))
+          is14DayRefund = daysSinceStart <= 14
+          if (is14DayRefund) {
+            updateData.refundStatus = "14_gun_tam_iade"
+          }
+        }
+
+        const triggerReason = updateData.status === "dropped"
+          ? "student_drop"
+          : is14DayRefund ? "student_refund_14day" : "student_refund"
 
         await prisma.$transaction(async (tx) => {
           for (const assignment of activeAssignments) {
@@ -148,6 +162,7 @@ export async function PATCH(
             })
 
             // Mentor hakedisini hesapla ve kaydet
+            // (14 gun iade olsa bile mentor tamamladigi hafta kadar odeme alir)
             await finalizeMentorEarningForAssignment(
               tx,
               assignment.id,
@@ -161,10 +176,14 @@ export async function PATCH(
             )
           }
 
-          // Ogrenci bitis tarihini guncelle
+          // Ogrenci bitis tarihini ve iade durumunu guncelle
+          const txUpdateData: any = { endDate: dropDate }
+          if (is14DayRefund) {
+            txUpdateData.refundStatus = "14_gun_tam_iade"
+          }
           await tx.student.update({
             where: { id },
-            data: { endDate: dropDate }
+            data: txUpdateData
           })
         })
       }
@@ -198,7 +217,7 @@ export async function PATCH(
             entityType: "student",
             entityId: student.id,
             action: "updated",
-            description: `UBG degisti: ${student.name}`,
+            description: `UBG değişti: ${student.name}`,
             userId: adminUserId,
             studentId: student.id,
             metadata: {
@@ -249,7 +268,7 @@ export async function DELETE(
           entityType: "student",
           entityId: id,
           action: "deleted",
-          description: `Ogrenci silindi: ${student.name}`,
+          description: `Öğrenci silindi: ${student.name}`,
           userId: adminUserId,
           studentId: id,
           metadata: {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import AdminNav from "@/components/AdminNav"
 
 interface Assignment {
   id: string
@@ -63,8 +63,11 @@ export default function AssignmentsPage() {
     studentId: "",
     mentorId: ""
   })
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   useEffect(() => {
+    setPage(1)
     fetchAssignments()
     fetchStudents()
     fetchMentors()
@@ -209,35 +212,7 @@ export default function AssignmentsPage() {
 
   return (
     <div className="min-h-screen bg-brand-ghost">
-      {/* Üst Bar (Header) */}
-      <div className="bg-brand-dark shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <Link href="/admin">
-              <h1 className="text-2xl font-bold text-white cursor-pointer hover:text-brand-primary transition-colors">
-                Coachify <span className="text-brand-primary">Admin</span>
-              </h1>
-            </Link>
-            <div className="flex gap-4 items-center">
-              <Link href="/admin/mentors" className="text-brand-sand hover:text-white transition-colors">
-                Mentorlar
-              </Link>
-              <Link href="/admin/students" className="text-brand-sand hover:text-white transition-colors">
-                Öğrenciler
-              </Link>
-              <Link href="/admin/mentor-earnings" className="text-brand-sand hover:text-white transition-colors">
-                Mentor Kazançları
-              </Link>
-              <Link href="/admin/logs" className="text-brand-sand hover:text-white transition-colors">
-                Kayıtlar
-              </Link>
-              <button onClick={() => router.push("/login")} className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium transition-all">
-                Çıkış
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminNav />
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
@@ -380,72 +355,37 @@ export default function AssignmentsPage() {
         {/* Mentor Değiştirme Modalı */}
         {showChangeMentorForm && selectedStudent && (
           <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-t-8 border-brand-primary">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border-t-8 border-brand-primary">
               <div className="p-8">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-brand-dark">{selectedStudent.name} İçin Mentor Değiştir</h3>
-                  <button
-                    onClick={() => {
-                      setShowChangeMentorForm(false)
-                      setSelectedStudent(null)
-                    }}
-                    className="text-brand-silver hover:text-brand-dark text-2xl transition-colors"
-                  >
-                    ✕
-                  </button>
+                  <h3 className="text-xl font-bold text-brand-dark">Mentor Değiştir</h3>
+                  <button onClick={() => { setShowChangeMentorForm(false); setSelectedStudent(null) }} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">✕</button>
                 </div>
-                {formError && (
-  <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 animate-in shake duration-300">
-    <div className="flex">
-      <div className="shrink-0 text-xl">⚠️</div>
-      <div className="ml-3">
-        <p className="text-sm text-red-700 font-bold">{formError}</p>
-      </div>
-    </div>
-  </div>
-)}
-                <form onSubmit={handleChangeMentor} className="space-y-5">
-                    <div>
-                      <label className="block text-sm font-bold text-brand-muted mb-1.5">Yeni Mentor *</label>
-                      <select
-                        required
-                        className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                        value={changeMentorData.newMentorId}
-                        onChange={(e) => setChangeMentorData({ ...changeMentorData, newMentorId: e.target.value })}
-                      >
-                        <option value="">Mentor Seçin</option>
-                        {mentors.map((mentor) => (
-                          <option key={mentor.id} value={mentor.id}>
-                            {mentor.name} ({mentor.specialty})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-brand-muted mb-1.5">Başlangıç Tarihi *</label>
-                      <input
-                        type="date"
-                        required
-                        className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                        value={changeMentorData.startDate}
-                        onChange={(e) => setChangeMentorData({ ...changeMentorData, startDate: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-brand-muted mb-1.5">Notlar</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                        value={changeMentorData.notes}
-                        onChange={(e) => setChangeMentorData({ ...changeMentorData, notes: e.target.value })}
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all shadow-lg shadow-brand-primary/20"
-                    >
-                      Mentoru Güncelle
-                    </button>
+                <p className="text-sm text-brand-muted mb-1">
+                  <span className="font-bold">{selectedStudent.name}</span> için yeni mentor seçin.
+                </p>
+                <form onSubmit={handleChangeMentor} className="space-y-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Yeni Mentor *</label>
+                    <select required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={changeMentorData.newMentorId} onChange={(e) => setChangeMentorData({ ...changeMentorData, newMentorId: e.target.value })}>
+                      <option value="">Mentor Seçin</option>
+                      {mentors.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Başlangıç Tarihi *</label>
+                    <input type="date" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={changeMentorData.startDate} onChange={(e) => setChangeMentorData({ ...changeMentorData, startDate: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Not</label>
+                    <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={changeMentorData.notes} onChange={(e) => setChangeMentorData({ ...changeMentorData, notes: e.target.value })} />
+                  </div>
+                  {formError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium">{formError}</div>
+                  )}
+                  <button type="submit" className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all shadow-lg shadow-brand-primary/20">Değişikliği Kaydet</button>
                 </form>
               </div>
             </div>
@@ -467,7 +407,7 @@ export default function AssignmentsPage() {
         </tr>
       </thead>
       <tbody className="bg-white divide-y divide-brand-silver/5">
-        {assignments.map((assignment) => (
+        {assignments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((assignment) => (
           <tr key={assignment.id} className="hover:bg-brand-sand/30 transition-colors">
             <td className="px-6 py-5">
               <div className="text-sm font-bold text-brand-dark">{assignment.student.name}</div>
@@ -529,6 +469,42 @@ export default function AssignmentsPage() {
   </div>
   {assignments.length === 0 && (
     <div className="text-center py-12 text-brand-silver font-medium italic">Henüz bir atama bulunamadı.</div>
+  )}
+  {assignments.length > PAGE_SIZE && (
+    <div className="flex items-center justify-between px-6 py-4 border-t border-brand-silver/10 bg-brand-ghost">
+      <p className="text-sm text-brand-muted">
+        {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, assignments.length)} / {assignments.length} atama
+      </p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => setPage(p => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Önceki
+        </button>
+        {Array.from({ length: Math.ceil(assignments.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPage(p)}
+            className={`px-3.5 py-2 text-sm font-bold rounded-lg border transition-all ${
+              p === page
+                ? 'bg-brand-logo text-white border-brand-logo'
+                : 'border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand'
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+        <button
+          onClick={() => setPage(p => Math.min(Math.ceil(assignments.length / PAGE_SIZE), p + 1))}
+          disabled={page >= Math.ceil(assignments.length / PAGE_SIZE)}
+          className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Sonraki
+        </button>
+      </div>
+    </div>
   )}
 </div>
       </div>

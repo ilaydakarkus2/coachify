@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import AdminNav from "@/components/AdminNav"
 //aaa
 interface Stats {
   totalStudents: number
@@ -57,8 +58,7 @@ interface Log {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter()
-  const [stats, setStats] = useState<Stats | null>(null)
+    const [stats, setStats] = useState<Stats | null>(null)
   const [recentActivity, setRecentActivity] = useState<Log[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -92,38 +92,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-brand-ghost">
       {/* Header - Lacivert Arka Plan */}
-      <div className="bg-brand-dark shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <Link href="/admin">
-              <h1 className="text-2xl font-bold text-white cursor-pointer hover:text-brand-primary transition-colors">
-                Coachify <span className="text-brand-primary">Admin</span>
-              </h1>
-            </Link>
-            
-            <div className="flex gap-4 items-center">
-              <Link href="/admin/mentors" className="text-brand-sand hover:text-white transition-colors">
-                Mentorlar
-              </Link>
-              <Link href="/admin/students" className="text-brand-sand hover:text-white transition-colors">
-                Öğrenciler
-              </Link>
-              <Link href="/admin/assignments" className="text-brand-sand hover:text-white transition-colors">
-                Atamalar
-              </Link>
-              <Link href="/admin/mentor-earnings" className="text-brand-sand hover:text-white transition-colors">
-                Mentor Kazançları
-              </Link>
-              <Link href="/admin/logs" className="text-brand-sand hover:text-white transition-colors">
-                İşlem Kayıtları
-              </Link>
-              <button onClick={() => router.push("/login")} className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium transition-all">
-                Çıkış Yap
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminNav />
 
       {stats && (
         <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
