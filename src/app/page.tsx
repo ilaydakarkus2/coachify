@@ -2,23 +2,38 @@ import Link from "next/link"
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Coachify</h1>
-          <p className="text-gray-600">Mentor Payment Panel</p>
-        </div>
-        <div className="space-y-4">
-          <Link
-            href="/login"
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Login
-          </Link>
-        </div>
-        <div className="text-center text-sm text-gray-500">
-          <p>Admin: admin@coachify.com / admin123</p>
-          <p>Customer: customer@test.com / customer123</p>
+    <div className="min-h-screen flex items-center justify-center bg-brand-dark">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-brand-primary rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-brand-logo rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative max-w-md w-full text-center px-4">
+        <h1 className="text-5xl font-black tracking-tight text-white mb-3">
+          Coachify
+        </h1>
+        <p className="text-brand-primary font-bold text-lg mb-10">
+          Mentor Payment Panel
+        </p>
+
+        <Link
+          href="/login"
+          className="inline-block w-full bg-brand-logo text-white py-4 px-6 rounded-2xl font-bold text-lg hover:bg-brand-primary transition-all shadow-lg shadow-brand-logo/30"
+        >
+          Giriş Yap
+        </Link>
+
+        <div className="mt-8 space-y-1">
+          <p className="text-xs font-bold text-brand-silver/40 uppercase tracking-widest mb-2">
+            Demo Hesapları
+          </p>
+          <p className="text-xs text-brand-silver/30">
+            Admin: admin@coachify.com / admin123
+          </p>
+          <p className="text-xs text-brand-silver/30">
+            Mentor: efe@coachify.com / efe123
+          </p>
         </div>
       </div>
     </div>

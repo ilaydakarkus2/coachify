@@ -24,9 +24,8 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError("Invalid email or password")
+        setError("E-posta veya şifre hatalı")
       } else {
-        // Role-based redirect
         const session = await fetch("/api/auth/session").then(res => res.json())
         const userRole = session?.user?.role
 
@@ -39,84 +38,95 @@ export default function LoginPage() {
         }
       }
     } catch (error) {
-      setError("An error occurred. Please try again.")
+      setError("Bir hata oluştu. Lütfen tekrar deneyin.")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Coachify
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
+    <div className="min-h-screen flex items-center justify-center bg-brand-dark px-4">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-brand-primary rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-brand-logo rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative max-w-md w-full">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-black tracking-tight">
+            <span className="text-white">Coachify</span>
+            <span className="text-brand-primary ml-1">Panel</span>
+          </h1>
+          <p className="mt-2 text-sm font-medium text-brand-silver/60">
+            Hesabınıza giriş yapın
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-          <div className="rounded-md shadow-sm -space-y-px">
+
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-2xl p-8 border border-brand-silver/10">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
+                {error}
+              </div>
+            )}
+
             <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
+              <label htmlFor="email" className="block text-sm font-bold text-brand-muted mb-2">
+                E-posta
               </label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                className="w-full px-4 py-3 border border-brand-silver/30 rounded-xl text-brand-dark placeholder-brand-silver/60 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+                placeholder="ornek@coachify.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
+              <label htmlFor="password" className="block text-sm font-bold text-brand-muted mb-2">
+                Şifre
               </label>
               <input
                 id="password"
                 name="password"
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                className="w-full px-4 py-3 border border-brand-silver/30 rounded-xl text-brand-dark placeholder-brand-silver/60 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-          </div>
 
-          <div>
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full bg-brand-logo text-white py-3.5 rounded-xl font-bold hover:bg-brand-dark transition-all shadow-lg shadow-brand-logo/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
             </button>
-          </div>
+          </form>
+        </div>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Demo accounts:
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Admin: admin@coachify.com / admin123
-            </p>
-            <p className="text-xs text-gray-500">
-              Mentor: efe@coachify.com / efe123
-            </p>
-          </div>
-        </form>
+        {/* Demo info */}
+        <div className="mt-6 text-center">
+          <p className="text-xs font-bold text-brand-silver/40 uppercase tracking-widest mb-2">
+            Demo Hesapları
+          </p>
+          <p className="text-xs text-brand-silver/30">
+            Admin: admin@coachify.com / admin123
+          </p>
+          <p className="text-xs text-brand-silver/30">
+            Mentor: efe@coachify.com / efe123
+          </p>
+        </div>
       </div>
     </div>
   )
