@@ -92,8 +92,10 @@ export default function StudentsPage() {
   })
   const [filters, setFilters] = useState({
     status: "",
-    search: ""
+    search: "",
+    mentorId: ""
   })
+  const [mentors, setMentors] = useState<Array<{ id: string; name: string }>>([])
   const [showExtendForm, setShowExtendForm] = useState(false)
   const [extendStudent, setExtendStudent] = useState<Student | null>(null)
   const [extendData, setExtendData] = useState({ weeks: 1, reason: "" })
@@ -103,11 +105,19 @@ export default function StudentsPage() {
     fetchStudents()
   }, [filters])
 
+  useEffect(() => {
+    fetch("/api/admin/mentors")
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setMentors(data) })
+      .catch(() => {})
+  }, [])
+
   const fetchStudents = async () => {
     try {
       const params = new URLSearchParams()
       if (filters.status) params.append("status", filters.status)
       if (filters.search) params.append("search", filters.search)
+      if (filters.mentorId) params.append("mentorId", filters.mentorId)
 
       const res = await fetch(`/api/admin/students?${params.toString()}`)
       const data = await res.json()
@@ -361,7 +371,20 @@ export default function StudentsPage() {
                 <option value="refunded">İade</option>
               </select>
             </div>
-            <div className="md:col-span-2">
+            <div>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Mentor</label>
+              <select
+                className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
+                value={filters.mentorId}
+                onChange={(e) => setFilters({ ...filters, mentorId: e.target.value })}
+              >
+                <option value="">Tüm Mentorlar</option>
+                {mentors.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-bold text-brand-muted mb-1.5">Arama</label>
               <input
                 type="text"

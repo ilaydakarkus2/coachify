@@ -190,6 +190,26 @@ export async function PATCH(
           }
         }
       })
+
+      // UBG (startDate) degisikligi ozel log
+      if (updateData.startDate && currentStudent.startDate.getTime() !== updateData.startDate.getTime()) {
+        await prisma.log.create({
+          data: {
+            entityType: "student",
+            entityId: student.id,
+            action: "updated",
+            description: `UBG degisti: ${student.name}`,
+            userId: adminUserId,
+            studentId: student.id,
+            metadata: {
+              field: "startDate",
+              previousUBG: currentStudent.startDate.toISOString(),
+              newUBG: updateData.startDate.toISOString(),
+              note: "UBG degisikligi — gecmis odemeler korunur, SAG degismez"
+            }
+          }
+        })
+      }
     } catch (logError) {
       console.error("[API] Warning: Failed to create log:", logError)
     }
@@ -220,6 +240,28 @@ export async function DELETE(
     await prisma.student.delete({
       where: { id: id }
     })
+
+    // Log the deletion
+    try {
+      const adminUserId = await getAdminUserId()
+      await prisma.log.create({
+        data: {
+          entityType: "student",
+          entityId: id,
+          action: "deleted",
+          description: `Ogrenci silindi: ${student.name}`,
+          userId: adminUserId,
+          studentId: id,
+          metadata: {
+            name: student.name,
+            email: student.email,
+            status: student.status
+          }
+        }
+      })
+    } catch (logError) {
+      console.error("[API] Warning: Failed to create deletion log:", logError)
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

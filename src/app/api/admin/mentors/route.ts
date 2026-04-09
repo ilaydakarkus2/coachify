@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { prisma, getAdminUserId } from "@/lib/prisma"
 
 export async function GET() {
   try {
@@ -62,7 +62,66 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Log
+    try {
+      const adminUserId = await getAdminUserId()
+      await prisma.log.create({
+        data: {
+          entityType: "mentor",
+          entityId: mentor.id,
+          action: "created",
+          description: `Yeni mentor olusturuldu: ${name}`,
+          userId: adminUserId,
+          metadata: { name, email, specialty }
+        }
+      })
+    } catch (logError) {
+      console.error("[API] Warning: Failed to create log:", logError)
+    }
+
     return NextResponse.json({ user, mentor }, { status: 201 })
+  } catch (error) {
+    console.error("Error creating mentor:", error)
+    return NextResponse.json({ error: "Failed to create mentor" }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing mentor id" }, { status: 400 })
+    }
+
+    const mentor = await prisma.mentor.findUnique({
+      where: { id },
+      include: { user: { select: { name: true, email: true } } }
+    })
+
+    if (!mentor) {
+      return NextResponse.json({ error: "Mentor not found" }, { status: 404 })
+    }
+
+    await prisma.mentor.delete({ where: { id } })
+
+    // Log
+    try {
+      const adminUserId = await getAdminUserId()
+      await prisma.log.create({
+        data: {
+          entityType: "mentor",
+          entityId: id,
+          action: "deleted",
+          description: `Mentor silindi: ${mentor.name}`,
+          userId: adminUserId,
+          metadata: { name: mentor.name, email: mentor.email }
+        }
+      })
+    } catch (logError) {
+      console.error("[API] Warning: Failed to create log:", logError)
+    }
   } catch (error) {
     console.error("Error creating mentor:", error)
     return NextResponse.json({ error: "Failed to create mentor" }, { status: 500 })
