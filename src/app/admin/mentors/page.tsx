@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import AdminNav from "@/components/AdminNav"
 
 interface Mentor {
@@ -20,11 +19,17 @@ interface Mentor {
 }
 
 export default function MentorsPage() {
-  const router = useRouter()
   const [mentors, setMentors] = useState<Mentor[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    specialty: ""
+  })
+  const [editingMentor, setEditingMentor] = useState<Mentor | null>(null)
+  const [editForm, setEditForm] = useState({
     name: "",
     email: "",
     password: "",
@@ -69,7 +74,7 @@ export default function MentorsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure?")) return
+    if (!confirm("Emin misiniz?")) return
 
     try {
       const res = await fetch(`/api/admin/mentors/${id}`, {
@@ -84,11 +89,44 @@ export default function MentorsPage() {
     }
   }
 
+  const openEditModal = (mentor: Mentor) => {
+    setEditingMentor(mentor)
+    setEditForm({
+      name: mentor.name,
+      email: mentor.email,
+      password: mentor.user?.password || "",
+      specialty: mentor.specialty
+    })
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingMentor) return
+
+    try {
+      const res = await fetch(`/api/admin/mentors/${editingMentor.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm)
+      })
+
+      if (res.ok) {
+        setEditingMentor(null)
+        fetchMentors()
+      } else {
+        const data = await res.json()
+        alert(data.error || "Guncelleme basarisiz")
+      }
+    } catch (error) {
+      console.error("Failed to update mentor:", error)
+    }
+  }
+
   if (loading) {
     return <div className="p-8">Loading...</div>
   }
 
- return (
+  return (
     <div className="min-h-screen bg-brand-ghost">
       <AdminNav />
 
@@ -99,42 +137,75 @@ export default function MentorsPage() {
             onClick={() => setShowForm(!showForm)}
             className={`${showForm ? 'bg-brand-muted' : 'bg-brand-logo'} text-white px-5 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-brand-logo/20`}
           >
-            {showForm ? "Vazgeç" : "+ Yeni Mentor"}
+            {showForm ? "Vazgec" : "+ Yeni Mentor"}
           </button>
         </div>
 
-        {/* Yeni Mentor Ekleme Formu Modalı */}
-{showForm && (
-  <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-in fade-in duration-200">
-    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border-t-8 border-brand-logo">
-      <div className="p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-brand-dark">Yeni Mentor Ekle</h3>
-          <button onClick={() => setShowForm(false)} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">✕</button>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-brand-muted mb-1">Ad Soyad *</label>
-            <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+        {/* Yeni Mentor Ekleme Formu Modali */}
+        {showForm && (
+          <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border-t-8 border-brand-logo">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-brand-dark">Yeni Mentor Ekle</h3>
+                  <button onClick={() => setShowForm(false)} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">&#10005;</button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Ad Soyad *</label>
+                    <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">E-posta *</label>
+                    <input type="email" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Sifre *</label>
+                    <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Brans *</label>
+                    <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialty} onChange={(e) => setFormData({ ...formData, specialty: e.target.value })} />
+                  </div>
+                  <button type="submit" className="w-full bg-brand-logo text-white py-3 rounded-xl font-bold hover:bg-brand-dark transition-all shadow-lg shadow-brand-logo/20">Mentoru Kaydet</button>
+                </form>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-bold text-brand-muted mb-1">E-posta *</label>
-            <input type="email" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+        )}
+
+        {/* Mentor Duzenleme Modali */}
+        {editingMentor && (
+          <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border-t-8 border-brand-primary">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-brand-dark">Mentor Duzenle</h3>
+                  <button onClick={() => setEditingMentor(null)} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">&#10005;</button>
+                </div>
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Ad Soyad</label>
+                    <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">E-posta</label>
+                    <input type="email" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Sifre</label>
+                    <input type="text" className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Brans</label>
+                    <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editForm.specialty} onChange={(e) => setEditForm({ ...editForm, specialty: e.target.value })} />
+                  </div>
+                  <button type="submit" className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-dark transition-all shadow-lg shadow-brand-primary/20">Guncelle</button>
+                </form>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-bold text-brand-muted mb-1">Şifre *</label>
-            <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-brand-muted mb-1">Branş *</label>
-            <input type="text" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialty} onChange={(e) => setFormData({ ...formData, specialty: e.target.value })} />
-          </div>
-          <button type="submit" className="w-full bg-brand-logo text-white py-3 rounded-xl font-bold hover:bg-brand-dark transition-all shadow-lg shadow-brand-logo/20">Mentoru Kaydet</button>
-        </form>
-      </div>
-    </div>
-  </div>
-)}
+        )}
 
         {/* Mentorlar Tablosu */}
         <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
@@ -143,9 +214,9 @@ export default function MentorsPage() {
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Ad Soyad</th>
                 <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">E-posta</th>
-                <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Şifre</th>
-                <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Branş</th>
-                <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">İşlemler</th>
+                <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Sifre</th>
+                <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Brans</th>
+                <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">Islemler</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-brand-silver/5">
@@ -166,15 +237,26 @@ export default function MentorsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap text-right">
-                    <button
-                      onClick={() => handleDelete(mentor.id)}
-                      className="text-red-400 hover:text-red-600 font-bold text-xs uppercase tracking-tighter transition-colors flex items-center gap-1 ml-auto"
-                    >
-                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      SİL
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => openEditModal(mentor)}
+                        className="text-brand-primary hover:text-brand-dark font-bold text-xs uppercase tracking-tighter transition-colors flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        DUZENLE
+                      </button>
+                      <button
+                        onClick={() => handleDelete(mentor.id)}
+                        className="text-red-400 hover:text-red-600 font-bold text-xs uppercase tracking-tighter transition-colors flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        SIL
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -182,13 +264,13 @@ export default function MentorsPage() {
           </table>
           {mentors.length === 0 && (
             <div className="text-center py-12 text-brand-silver font-medium italic">
-              Henüz kayıtlı mentor bulunmuyor.
+              Henuz kayitli mentor bulunmuyor.
             </div>
           )}
           {mentors.length > PAGE_SIZE && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-brand-silver/10 bg-brand-ghost">
               <p className="text-sm text-brand-muted">
-                {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, mentors.length)} / {mentors.length} mentor
+                {((page - 1) * PAGE_SIZE) + 1}&ndash;{Math.min(page * PAGE_SIZE, mentors.length)} / {mentors.length} mentor
               </p>
               <div className="flex gap-2">
                 <button
@@ -196,7 +278,7 @@ export default function MentorsPage() {
                   disabled={page === 1}
                   className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  Önceki
+                  Onceki
                 </button>
                 {Array.from({ length: Math.ceil(mentors.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
                   <button
