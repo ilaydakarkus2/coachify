@@ -4,17 +4,12 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import AdminNav from "@/components/AdminNav"
-//aaa
 interface Stats {
   totalStudents: number
   activeStudents: number
   droppedStudents: number
   refundedStudents: number
-  totalRevenue: number
   totalMentors: number
-  currentMonthRevenue: number
-  lastMonthRevenue: number
-  revenueGrowth: number
   upcomingExpirations: Array<{
     id: string
     name: string
@@ -97,7 +92,7 @@ export default function AdminDashboard() {
       {stats && (
         <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Total Students */}
             <div className="bg-white rounded-2xl shadow-sm p-6 border border-brand-silver/10">
               <div className="flex items-center justify-between">
@@ -141,26 +136,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Total Revenue */}
-            <div className="bg-brand-sand rounded-2xl shadow-sm p-6 border border-brand-primary/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-brand-muted">Toplam Gelir</p>
-                  <p className="text-2xl font-black text-brand-dark mt-1">${stats.totalRevenue.toFixed(2)}</p>
-                </div>
-                <div className="bg-brand-dark p-3 rounded-xl shadow-lg shadow-brand-dark/20">
-                  <svg className="w-6 h-6 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <span className="text-xs font-bold text-brand-muted">
-                  Bu ay: ${stats.currentMonthRevenue.toFixed(2)}
-                </span>
-              </div>
-            </div>
-
             {/* Total Mentors */}
             <div className="bg-white rounded-2xl shadow-sm p-6 border border-brand-silver/10">
               <div className="flex items-center justify-between">
@@ -183,29 +158,6 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Revenue Growth */}
-            <div className="bg-white rounded-2xl shadow-sm p-6 border border-brand-silver/10">
-              <h3 className="text-lg font-bold text-brand-dark mb-4">Gelir Artışı</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-brand-muted">Bu Ay</p>
-                  <p className="text-2xl font-black text-brand-logo">${stats.currentMonthRevenue.toFixed(2)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-brand-muted">Geçen Ay</p>
-                  <p className="text-xl font-bold text-brand-silver">${stats.lastMonthRevenue.toFixed(2)}</p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className={`text-lg font-black ${
-                  stats.revenueGrowth >= 0 ? "text-brand-logo" : "text-red-500"
-                }`}>
-                  {stats.revenueGrowth >= 0 ? "+" : ""}{stats.revenueGrowth.toFixed(1)}%
-                </div>
-                <p className="text-sm font-medium text-brand-muted">geçen aya göre</p>
-              </div>
-            </div>
-
             {/* Upcoming Expirations */}
             <div className="bg-white rounded-2xl shadow-sm p-6 border border-brand-silver/10">
               <h3 className="text-lg font-bold text-brand-dark mb-4">Süresi Dolacaklar (7 günlük)</h3>

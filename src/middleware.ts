@@ -29,9 +29,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Admin API rotalarini koru
+  if (pathname.startsWith("/api/admin")) {
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+    if (!token || token.role !== "admin") {
+      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 })
+    }
+  }
+
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/mentor/:path*", "/admin/:path*", "/api/mentor/:path*"],
+  matcher: ["/mentor/:path*", "/admin/:path*", "/api/mentor/:path*", "/api/admin/:path*"],
 }
