@@ -52,12 +52,11 @@ function getAuth() {
     throw new Error("Google Sheets credentials not configured")
   }
 
-  sheetsAuth = new google.auth.JWT(
+  sheetsAuth = new google.auth.JWT({
     email,
-    undefined,
     key,
-    ["https://www.googleapis.com/auth/spreadsheets"]
-  )
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  })
 
   return sheetsAuth
 }

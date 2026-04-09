@@ -11,12 +11,13 @@ export async function GET() {
     }
 
     const mentor = await prisma.mentor.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: session.user.id },
     })
     if (!mentor) {
       return NextResponse.json({ error: "Mentor profili bulunamadı" }, { status: 404 })
     }
 
+    // Tum assignment'lari getir (aktif + gecmis)
     const assignments = await prisma.studentAssignment.findMany({
       where: { mentorId: mentor.id },
       include: {
@@ -24,28 +25,64 @@ export async function GET() {
           select: {
             id: true,
             name: true,
-            email: true,
             phone: true,
             school: true,
             grade: true,
-            status: true,
             startDate: true,
-            endDate: true
-          }
-        }
+            endDate: true,
+            status: true,
+            currentNetScore: true,
+            targetNetScore: true,
+          },
+        },
       },
-      orderBy: { startDate: "desc" }
+      orderBy: { startDate: "desc" },
     })
 
-    const activeStudents = assignments.filter(a => !a.endDate && a.student.status === "active").length
-    const totalStudents = assignments.length
+    // Aktif: endDate null olanlar
+    const active = assignments
+      .filter((a) => a.endDate === null)
+      .map((a) => ({
+        studentId: a.student.id,
+        name: a.student.name,
+        phone: a.student.phone,
+        school: a.student.school,
+        grade: a.student.grade,
+        studentStartDate: a.student.startDate,
+        endDate: a.student.endDate,
+        status: a.student.status,
+        // Mentor değişikliği: öğrencinin bu mentora geçtiği tarih
+        assignmentStartDate: a.startDate,
+        currentNetScore: a.student.currentNetScore,
+        targetNetScore: a.student.targetNetScore,
+      }))
+
+    // Gecmis: endDate dolu olanlar (mentor değişikliği veya öğrenci bırakma)
+    const past = assignments
+      .filter((a) => a.endDate !== null)
+      .map((a) => ({
+        studentId: a.student.id,
+        name: a.student.name,
+        phone: a.student.phone,
+        school: a.student.school,
+        grade: a.student.grade,
+        studentStartDate: a.student.startDate,
+        endDate: a.student.endDate,
+        status: a.student.status,
+        assignmentStartDate: a.startDate,
+        assignmentEndDate: a.endDate,
+        currentNetScore: a.student.currentNetScore,
+        targetNetScore: a.student.targetNetScore,
+      }))
 
     return NextResponse.json({
-      assignments,
-      summary: { activeStudents, totalStudents }
+      mentor: { name: mentor.name, specialty: mentor.specialty, email: mentor.email },
+      active,
+      past,
+      summary: { totalActive: active.length, totalPast: past.length },
     })
   } catch (error) {
-    console.error("Error fetching mentor students:", error)
+    console.error("[MENTOR API] Error fetching students:", error)
     return NextResponse.json({ error: "Öğrenciler getirilemedi" }, { status: 500 })
   }
 }

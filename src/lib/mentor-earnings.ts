@@ -189,7 +189,7 @@ export async function finalizeMentorEarningForAssignment(
       status: "paid"
     }
   })
-  const alreadyPaidWeeks = paidEarnings.reduce((sum, e) => sum + e.completedWeeks, 0)
+  const alreadyPaidWeeks = paidEarnings.reduce((sum: number, e: any) => sum + e.completedWeeks, 0)
   const weeksToRecord = totalWeeks - alreadyPaidWeeks
 
   if (weeksToRecord <= 0) return

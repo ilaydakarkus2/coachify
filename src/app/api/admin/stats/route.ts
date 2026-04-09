@@ -102,7 +102,7 @@ export async function GET() {
       id: student.id,
       name: student.name,
       email: student.email,
-      endDate: student.endDate,
+      endDate: student.endDate?.toISOString() || "",
       daysLeft: Math.ceil((student.endDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
       mentor: student.studentAssignments[0]?.mentor || null
     }))

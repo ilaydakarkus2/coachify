@@ -4,6 +4,23 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 
+// --- Types ---
+
+interface StudentInfo {
+  studentId: string
+  name: string
+  phone: string
+  school: string
+  grade: string
+  studentStartDate: string
+  endDate: string | null
+  status: string
+  assignmentStartDate: string
+  assignmentEndDate?: string | null
+  currentNetScore: number | null
+  targetNetScore: number | null
+}
+
 interface Earning {
   id: string
   completedWeeks: number
@@ -16,8 +33,8 @@ interface Earning {
   student: {
     id: string
     name: string
-    email: string
     school: string
+    grade: string
     status: string
   }
 }
@@ -28,7 +45,12 @@ interface MentorInfo {
   email: string
 }
 
-interface Summary {
+interface StudentSummary {
+  totalActive: number
+  totalPast: number
+}
+
+interface EarningSummary {
   totalEarned: number
   totalPending: number
   totalRecords: number
@@ -36,13 +58,21 @@ interface Summary {
   pendingCount: number
 }
 
+// --- Component ---
+
 export default function MentorPage() {
   const router = useRouter()
   const [mentor, setMentor] = useState<MentorInfo | null>(null)
+  const [activeStudents, setActiveStudents] = useState<StudentInfo[]>([])
+  const [pastStudents, setPastStudents] = useState<StudentInfo[]>([])
+  const [studentSummary, setStudentSummary] = useState<StudentSummary>({ totalActive: 0, totalPast: 0 })
   const [earnings, setEarnings] = useState<Earning[]>([])
-  const [summary, setSummary] = useState<Summary>({ totalEarned: 0, totalPending: 0, totalRecords: 0, paidCount: 0, pendingCount: 0 })
+  const [earningSummary, setEarningSummary] = useState<EarningSummary>({
+    totalEarned: 0, totalPending: 0, totalRecords: 0, paidCount: 0, pendingCount: 0,
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [tab, setTab] = useState<"students" | "earnings">("students")
 
   useEffect(() => {
     fetchData()
@@ -50,18 +80,33 @@ export default function MentorPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/mentor/earnings")
-      if (res.status === 401) {
+      const [studentsRes, earningsRes] = await Promise.all([
+        fetch("/api/mentor/students"),
+        fetch("/api/mentor/earnings"),
+      ])
+
+      if (studentsRes.status === 401 || earningsRes.status === 401) {
         router.push("/login")
         return
       }
-      const data = await res.json()
-      if (res.ok) {
-        setMentor(data.mentor)
-        setEarnings(data.earnings)
-        setSummary(data.summary)
-      } else {
-        setError(data.error || "Veri yüklenemedi")
+
+      const studentsData = await studentsRes.json()
+      const earningsData = await earningsRes.json()
+
+      if (studentsRes.ok) {
+        setMentor(studentsData.mentor)
+        setActiveStudents(studentsData.active)
+        setPastStudents(studentsData.past)
+        setStudentSummary(studentsData.summary)
+      }
+
+      if (earningsRes.ok) {
+        setEarnings(earningsData.earnings)
+        setEarningSummary(earningsData.summary)
+      }
+
+      if (!studentsRes.ok && !earningsRes.ok) {
+        setError(studentsData.error || "Veri yüklenemedi")
       }
     } catch {
       setError("Bağlantı hatası")
@@ -74,13 +119,23 @@ export default function MentorPage() {
     const styles: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-700",
       paid: "bg-green-100 text-green-700 border border-green-200",
-      cancelled: "bg-red-100 text-red-700"
+      cancelled: "bg-red-100 text-red-700",
     }
-    const labels: Record<string, string> = {
-      pending: "Bekliyor",
-      paid: "Ödendi",
-      cancelled: "İptal"
+    const labels: Record<string, string> = { pending: "Bekliyor", paid: "Ödendi", cancelled: "İptal" }
+    return (
+      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${styles[status] || ""}`}>
+        {labels[status] || status}
+      </span>
+    )
+  }
+
+  const studentStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      active: "bg-brand-primary/10 text-brand-logo border border-brand-primary/20",
+      dropped: "bg-orange-100 text-orange-700",
+      refunded: "bg-red-100 text-red-700",
     }
+    const labels: Record<string, string> = { active: "Aktif", dropped: "Bıraktı", refunded: "İade" }
     return (
       <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${styles[status] || ""}`}>
         {labels[status] || status}
@@ -97,7 +152,9 @@ export default function MentorPage() {
       <div className="min-h-screen flex items-center justify-center bg-brand-ghost">
         <div className="text-center">
           <p className="text-red-600 font-bold mb-4">{error}</p>
-          <button onClick={() => router.push("/login")} className="bg-brand-logo text-white px-6 py-2 rounded-xl font-bold">Giriş Yap</button>
+          <button onClick={() => router.push("/login")} className="bg-brand-logo text-white px-6 py-2 rounded-xl font-bold">
+            Giriş Yap
+          </button>
         </div>
       </div>
     )
@@ -105,7 +162,7 @@ export default function MentorPage() {
 
   return (
     <div className="min-h-screen bg-brand-ghost">
-      {/* Ust Bar */}
+      {/* Üst Bar */}
       <div className="bg-brand-dark shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
@@ -114,7 +171,7 @@ export default function MentorPage() {
             </h1>
             <div className="flex gap-4 items-center">
               {mentor && (
-                <span className="text-brand-sand text-sm">{mentor.name} - {mentor.specialty}</span>
+                <span className="text-brand-sand text-sm">{mentor.name} — {mentor.specialty}</span>
               )}
               <button
                 onClick={() => signOut({ callbackUrl: "/login" })}
@@ -128,79 +185,223 @@ export default function MentorPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Ozet Kartlari */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-2">Toplam Kazanılan</div>
-            <div className="text-3xl font-black text-green-600">
-              {summary.totalEarned.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-            </div>
-            <div className="text-xs text-brand-muted mt-1">{summary.paidCount} ödeme alındı</div>
+        {/* Özet Kartları */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
+            <div className="text-sm font-bold text-brand-muted mb-1">Aktif Öğrenci</div>
+            <div className="text-3xl font-black text-brand-logo">{studentSummary.totalActive}</div>
           </div>
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-2">Bekleyen Ödeme</div>
-            <div className="text-3xl font-black text-yellow-600">
-              {summary.totalPending.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-            </div>
-            <div className="text-xs text-brand-muted mt-1">{summary.pendingCount} bekleyen hakediş</div>
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
+            <div className="text-sm font-bold text-brand-muted mb-1">Geçmiş Öğrenci</div>
+            <div className="text-3xl font-black text-brand-muted">{studentSummary.totalPast}</div>
           </div>
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-2">Toplam Hakediş</div>
-            <div className="text-3xl font-black text-brand-dark">
-              {(summary.totalEarned + summary.totalPending).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
+            <div className="text-sm font-bold text-brand-muted mb-1">Kazanılan</div>
+            <div className="text-2xl font-black text-green-600">
+              {earningSummary.totalEarned.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
             </div>
-            <div className="text-xs text-brand-muted mt-1">{summary.totalRecords} kayıt</div>
+          </div>
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
+            <div className="text-sm font-bold text-brand-muted mb-1">Bekleyen</div>
+            <div className="text-2xl font-black text-yellow-600">
+              {earningSummary.totalPending.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+            </div>
           </div>
         </div>
 
-        {/* Hakedis Tablosu */}
-        <h2 className="text-xl font-bold text-brand-dark mb-4">Hakediş Detayları</h2>
-        <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-brand-silver/10">
-              <thead className="bg-brand-ghost">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Hafta</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tutar</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Dönem</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-brand-silver/5">
-                {earnings.map((earning) => (
-                  <tr key={earning.id} className="hover:bg-brand-sand/30 transition-colors">
-                    <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="text-sm font-bold text-brand-dark">{earning.student.name}</div>
-                      <div className="text-xs text-brand-muted">{earning.student.email}</div>
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">
-                      {earning.student.school}
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted font-medium">
-                      {earning.completedWeeks} Hafta
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-brand-dark">
-                      {earning.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">
-                      {new Date(earning.cycleDate).toLocaleDateString('tr-TR')}
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap">
-                      {statusBadge(earning.status)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {earnings.length === 0 && (
-            <div className="text-center py-12 text-brand-silver font-medium italic">
-              Henüz hakediş kaydınız bulunmuyor.
-            </div>
-          )}
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setTab("students")}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              tab === "students"
+                ? "bg-brand-logo text-white shadow-lg shadow-brand-logo/20"
+                : "bg-white text-brand-muted border border-brand-silver/30 hover:bg-brand-sand/50"
+            }`}
+          >
+            Öğrencilerim
+          </button>
+          <button
+            onClick={() => setTab("earnings")}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              tab === "earnings"
+                ? "bg-brand-logo text-white shadow-lg shadow-brand-logo/20"
+                : "bg-white text-brand-muted border border-brand-silver/30 hover:bg-brand-sand/50"
+            }`}
+          >
+            Hakedişlerim
+          </button>
         </div>
+
+        {/* ÖĞRENCİLER TAB */}
+        {tab === "students" && (
+          <div className="space-y-8">
+            {/* Aktif Öğrenciler */}
+            <div>
+              <h2 className="text-xl font-bold text-brand-dark mb-4">
+                Aktif Öğrenciler
+                <span className="text-sm font-normal text-brand-muted ml-2">({activeStudents.length})</span>
+              </h2>
+              <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-brand-silver/10">
+                    <thead className="bg-brand-ghost">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Telefon</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul / Sınıf</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Başlangıç</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Atanma Tarihi</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Puan</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-brand-silver/5">
+                      {activeStudents.map((s) => (
+                        <tr key={s.studentId + s.assignmentStartDate} className="hover:bg-brand-sand/30 transition-colors">
+                          <td className="px-6 py-5 whitespace-nowrap">
+                            <div className="text-sm font-bold text-brand-dark">{s.name}</div>
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">{s.phone}</td>
+                          <td className="px-6 py-5 whitespace-nowrap">
+                            <div className="text-sm font-bold text-brand-dark">{s.school}</div>
+                            <div className="text-xs text-brand-muted">{s.grade}</div>
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">
+                            {new Date(s.studentStartDate).toLocaleDateString("tr-TR")}
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-logo font-medium">
+                            {new Date(s.assignmentStartDate).toLocaleDateString("tr-TR")}
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark">
+                            {s.currentNetScore != null || s.targetNetScore != null ? (
+                              <span>{s.currentNetScore ?? "-"} → {s.targetNetScore ?? "-"}</span>
+                            ) : "-"}
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap">
+                            {studentStatusBadge(s.status)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {activeStudents.length === 0 && (
+                  <div className="text-center py-12 text-brand-silver font-medium italic">Aktif öğrenciniz bulunmuyor.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Geçmiş Öğrenciler */}
+            <div>
+              <h2 className="text-xl font-bold text-brand-dark mb-4">
+                Geçmiş Öğrenciler
+                <span className="text-sm font-normal text-brand-muted ml-2">({pastStudents.length})</span>
+              </h2>
+              <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-brand-silver/10">
+                    <thead className="bg-brand-ghost">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Telefon</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul / Sınıf</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Başlangıç</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Atanma</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Bitiş</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-brand-silver/5">
+                      {pastStudents.map((s) => (
+                        <tr key={s.studentId + s.assignmentStartDate} className="hover:bg-brand-sand/30 transition-colors">
+                          <td className="px-6 py-5 whitespace-nowrap">
+                            <div className="text-sm font-bold text-brand-dark">{s.name}</div>
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">{s.phone}</td>
+                          <td className="px-6 py-5 whitespace-nowrap">
+                            <div className="text-sm font-bold text-brand-dark">{s.school}</div>
+                            <div className="text-xs text-brand-muted">{s.grade}</div>
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">
+                            {new Date(s.studentStartDate).toLocaleDateString("tr-TR")}
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-logo font-medium">
+                            {new Date(s.assignmentStartDate).toLocaleDateString("tr-TR")}
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-silver italic">
+                            {s.assignmentEndDate
+                              ? new Date(s.assignmentEndDate).toLocaleDateString("tr-TR")
+                              : "-"}
+                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap">
+                            {studentStatusBadge(s.status)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {pastStudents.length === 0 && (
+                  <div className="text-center py-12 text-brand-silver font-medium italic">Geçmiş öğrenci bulunmuyor.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* HAKEDİŞ TAB */}
+        {tab === "earnings" && (
+          <div>
+            <h2 className="text-xl font-bold text-brand-dark mb-4">Hakediş Detayları</h2>
+            <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-brand-silver/10">
+                  <thead className="bg-brand-ghost">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
+                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul</th>
+                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Hafta</th>
+                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tutar</th>
+                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Dönem</th>
+                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-brand-silver/5">
+                    {earnings.map((earning) => (
+                      <tr key={earning.id} className="hover:bg-brand-sand/30 transition-colors">
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="text-sm font-bold text-brand-dark">{earning.student.name}</div>
+                          <div className="text-xs text-brand-muted">{earning.student.grade}</div>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">
+                          {earning.student.school}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted font-medium">
+                          {earning.completedWeeks} Hafta
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-brand-dark">
+                          {earning.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">
+                          {new Date(earning.cycleDate).toLocaleDateString("tr-TR")}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          {statusBadge(earning.status)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {earnings.length === 0 && (
+                <div className="text-center py-12 text-brand-silver font-medium italic">
+                  Henüz hakediş kaydınız bulunmuyor.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

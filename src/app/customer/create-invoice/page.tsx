@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
@@ -17,6 +17,14 @@ interface Package {
 }
 
 export default function CreateInvoicePage() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <CreateInvoiceContent />
+    </Suspense>
+  )
+}
+
+function CreateInvoiceContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [mentors, setMentors] = useState<Mentor[]>([])
