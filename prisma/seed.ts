@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/prisma';
 
 // Prisma Client will automatically pick up DATABASE_URL from .env
 const prisma = new PrismaClient({
