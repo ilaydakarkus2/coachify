@@ -157,7 +157,39 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Mentor Workload */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 border border-brand-silver/10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-brand-dark">Mentor İş Yükü</h3>
+                <Link href="/admin/mentors" className="text-sm font-bold text-brand-primary hover:text-brand-logo transition-colors">Tüm Mentorlar</Link>
+              </div>
+              {stats.mentorWorkload.length > 0 ? (
+                <div className="space-y-3">
+                  {stats.mentorWorkload.slice(0, 4).map((workload, index) => (
+                    <div key={workload.mentor.id} className="flex items-center justify-between p-3 bg-brand-ghost rounded-xl border border-brand-silver/5">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-brand-dark text-brand-primary w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shadow-sm">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-brand-dark">{workload.mentor.name}</p>
+                          <p className="text-xs font-medium text-brand-muted">{workload.mentor.specialty}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-black text-brand-logo">{workload.activeStudents}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-muted">öğrenciler</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm font-medium text-brand-muted">Aktif mentor yok</p>
+              )}
+            </div>
+
             {/* Upcoming Expirations */}
             <div className="bg-white rounded-2xl shadow-sm p-6 border border-brand-silver/10">
               <h3 className="text-lg font-bold text-brand-dark mb-4">Süresi Dolacaklar (7 günlük)</h3>
@@ -190,35 +222,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Mentor Workload */}
-            <div className="bg-white rounded-2xl shadow-sm p-6 border border-brand-silver/10">
-              <h3 className="text-lg font-bold text-brand-dark mb-4">Mentor İş Yükü</h3>
-              {stats.mentorWorkload.length > 0 ? (
-                <div className="space-y-3">
-                  {stats.mentorWorkload.map((workload, index) => (
-                    <div key={workload.mentor.id} className="flex items-center justify-between p-3 bg-brand-ghost rounded-xl border border-brand-silver/5">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-brand-dark text-brand-primary w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shadow-sm">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-brand-dark">{workload.mentor.name}</p>
-                          <p className="text-xs font-medium text-brand-muted">{workload.mentor.specialty}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-black text-brand-logo">{workload.activeStudents}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-muted">öğrenciler</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm font-medium text-brand-muted">Aktif mentor yok</p>
-              )}
-            </div>
-
+          <div className="grid grid-cols-1 gap-6">
             {/* Recent Activity */}
             <div className="bg-white rounded-2xl shadow-sm p-6 border border-brand-silver/10">
               <div className="flex items-center justify-between mb-4">
