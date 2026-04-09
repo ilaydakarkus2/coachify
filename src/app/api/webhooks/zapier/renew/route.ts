@@ -33,9 +33,17 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Ogrenciyi bul (aktif assignment'lari dahil)
+  // Ogrenciyi bul - email veya studentNumber ile
+  const studentEmail = body.email || (body.studentNumber ? `${body.studentNumber}@coachify.local` : null)
+  if (!studentEmail) {
+    return NextResponse.json(
+      { success: false, message: "Missing required: email or studentNumber" },
+      { status: 400 }
+    )
+  }
+
   const student = await prisma.student.findUnique({
-    where: { email: body.email },
+    where: { email: studentEmail },
     include: {
       studentAssignments: {
         where: { endDate: null },
@@ -46,7 +54,7 @@ export async function POST(request: NextRequest) {
 
   if (!student) {
     return NextResponse.json(
-      { success: false, message: `Student not found: ${body.email}` },
+      { success: false, message: `Student not found: ${studentEmail}` },
       { status: 404 }
     )
   }
@@ -65,6 +73,13 @@ export async function POST(request: NextRequest) {
       )
     }
     mentor = newMentor
+  } else if (body.mentorName) {
+    const newMentor = await prisma.mentor.findFirst({
+      where: { name: { equals: body.mentorName, mode: "insensitive" } },
+    })
+    if (newMentor) {
+      mentor = newMentor
+    }
   }
 
   if (!mentor) {

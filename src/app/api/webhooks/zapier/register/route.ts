@@ -24,19 +24,26 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Zorunlu alan kontrolu
-  const requiredFields = ["name", "email", "phone", "school", "grade", "startDate", "mentorEmail"]
-  const missing = requiredFields.filter((f) => !body[f])
-  if (missing.length > 0) {
+  // Zorunlu alan kontrolu - sadece name ve phone zorunlu (Tally'den gelenler)
+  if (!body.name) {
     return NextResponse.json(
-      { success: false, message: `Missing required fields: ${missing.join(", ")}` },
+      { success: false, message: "Missing required field: name" },
+      { status: 400 }
+    )
+  }
+
+  // Email: verilmediyse studentNumber@coachify.local olustur
+  const studentEmail = body.email || (body.studentNumber ? `${body.studentNumber}@coachify.local` : null)
+  if (!studentEmail) {
+    return NextResponse.json(
+      { success: false, message: "Missing required: email or studentNumber" },
       { status: 400 }
     )
   }
 
   // Duplicate ogrenci kontrolu
   const existing = await prisma.student.findUnique({
-    where: { email: body.email },
+    where: { email: studentEmail },
   })
   if (existing) {
     return NextResponse.json(
@@ -45,13 +52,20 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Mentor bul
-  const mentor = await prisma.mentor.findFirst({
-    where: { email: body.mentorEmail },
-  })
+  // Mentor bul - email veya isim ile
+  let mentor = null
+  if (body.mentorEmail) {
+    mentor = await prisma.mentor.findFirst({ where: { email: body.mentorEmail } })
+  }
+  if (!mentor && body.mentorName) {
+    mentor = await prisma.mentor.findFirst({
+      where: { name: { equals: body.mentorName, mode: "insensitive" } },
+    })
+  }
   if (!mentor) {
+    const search = body.mentorEmail || body.mentorName || "none"
     return NextResponse.json(
-      { success: false, message: `Mentor not found: ${body.mentorEmail}` },
+      { success: false, message: `Mentor not found: ${search}` },
       { status: 404 }
     )
   }
@@ -60,16 +74,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const startDate = new Date(body.startDate)
+      const startDate = body.startDate ? new Date(body.startDate) : new Date()
 
       // Student olustur
       const student = await tx.student.create({
         data: {
           name: body.name,
-          email: body.email,
-          phone: body.phone,
-          school: body.school,
-          grade: body.grade,
+          email: studentEmail,
+          phone: body.phone || "",
+          school: body.school || "Belirtilmedi",
+          grade: body.grade || "",
           startDate,
           status: "active",
           paymentStatus: "pending",
