@@ -65,7 +65,7 @@ export default function StudentsPage() {
     targetNetScore: "",
     specialNote: "",
     contactPreference: "",
-    membershipType: "new",
+    membershipType: "1_aylik",
     discountCode: "",
   })
   const [editFormData, setEditFormData] = useState({
@@ -174,7 +174,7 @@ export default function StudentsPage() {
         targetNetScore: "",
         specialNote: "",
         contactPreference: "",
-        membershipType: "new",
+        membershipType: "1_aylik",
         discountCode: "",
       })
       fetchStudents()
