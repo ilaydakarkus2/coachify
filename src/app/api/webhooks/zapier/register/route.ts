@@ -62,6 +62,30 @@ export async function POST(request: NextRequest) {
   }
   console.log("[REGISTER] Kullanilacak email:", studentEmail)
 
+  // contactPreference mapping (Tally'den Türkçe gelebilir)
+  if (body.contactPreference) {
+    const cp = body.contactPreference.toLowerCase()
+    if (cp === "student" || cp === "ogrenci" || cp === "öğrenci") {
+      body.contactPreference = "student"
+    } else if (cp === "parent" || cp === "veli") {
+      body.contactPreference = "parent"
+    } else if (cp.includes("ikisi") || cp.includes("hem") || cp === "both") {
+      body.contactPreference = "both"
+    }
+    console.log("[REGISTER] contactPreference mapped to:", body.contactPreference)
+  }
+
+  // membershipType mapping (Tally'den Türkçe gelebilir)
+  if (body.membershipType) {
+    const mt = body.membershipType.toLowerCase()
+    if (mt.includes("1") && (mt.includes("ay") || mt.includes("aylik") || mt.includes("ylık"))) {
+      body.membershipType = "1_aylik"
+    } else if (mt.includes("yks") || mt.includes("kadar")) {
+      body.membershipType = "yks_kadar"
+    }
+    console.log("[REGISTER] membershipType mapped to:", body.membershipType)
+  }
+
   // Duplicate ogrenci kontrolu - email
   console.log("[REGISTER] Duplicate kontrolu yapiliyor...")
   const existing = await prisma.student.findUnique({
