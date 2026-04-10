@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
         data: {
           name: body.name,
           email: studentEmail,
+          studentNumber: body.studentNumber ? parseInt(body.studentNumber, 10) : null,
           phone: body.phone || "",
           school: body.school || "Belirtilmedi",
           grade: body.grade || "",
