@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   }
   console.log("[REGISTER] Kullanilacak email:", studentEmail)
 
-  // Duplicate ogrenci kontrolu
+  // Duplicate ogrenci kontrolu - email
   console.log("[REGISTER] Duplicate kontrolu yapiliyor...")
   const existing = await prisma.student.findUnique({
     where: { email: studentEmail },
@@ -70,9 +70,26 @@ export async function POST(request: NextRequest) {
   if (existing) {
     console.error("[REGISTER] DUPLICATE: Bu email zaten kayitli. studentId:", existing.id, "name:", existing.name)
     return NextResponse.json(
-      { success: false, message: "Student already exists", data: { studentId: existing.id, name: existing.name, email: studentEmail } },
+      { success: false, message: "Student already exists (email)", data: { studentId: existing.id, name: existing.name, email: studentEmail } },
       { status: 409 }
     )
+  }
+
+  // Duplicate ogrenci kontrolu - studentNumber
+  if (body.studentNumber) {
+    const studentNum = parseInt(body.studentNumber, 10)
+    if (!isNaN(studentNum)) {
+      const existingByNumber = await prisma.student.findUnique({
+        where: { studentNumber: studentNum },
+      })
+      if (existingByNumber) {
+        console.error("[REGISTER] DUPLICATE: Bu studentNumber zaten kayitli. studentId:", existingByNumber.id, "name:", existingByNumber.name, "studentNumber:", studentNum)
+        return NextResponse.json(
+          { success: false, message: "Student already exists (studentNumber)", data: { studentId: existingByNumber.id, name: existingByNumber.name, studentNumber: studentNum } },
+          { status: 409 }
+        )
+      }
+    }
   }
   console.log("[REGISTER] Duplicate kontrolu gecti, yeni kayit")
 
