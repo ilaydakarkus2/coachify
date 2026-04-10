@@ -5,29 +5,48 @@ import { createLog } from "@/lib/audit"
 import { isSheetsEnabled, appendStudentRow } from "@/lib/google-sheets"
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  console.log("[REGISTER] === Yeni webhook request basladi ===")
+  console.log("[REGISTER] URL:", request.url)
+  console.log("[REGISTER] Method:", request.method)
+  console.log("[REGISTER] Headers:", JSON.stringify(Object.fromEntries(request.headers.entries()), null, 2))
+
   // API key dogrulama
   const auth = validateApiKey(request)
   if (!auth.valid) {
+    console.error("[REGISTER] AUTH BASARISIZ - Sebep:", auth.error)
     return NextResponse.json(
       { success: false, message: auth.error },
       { status: 401 }
     )
   }
+  console.log("[REGISTER] Auth basarili")
 
   let body: any
   try {
     body = await request.json()
-  } catch {
+    console.log("[REGISTER] Gelen body:", JSON.stringify(body, null, 2))
+  } catch (parseError) {
+    console.error("[REGISTER] JSON parse hatasi:", parseError)
     return NextResponse.json(
       { success: false, message: "Invalid JSON body" },
       { status: 400 }
     )
   }
 
+  // Gelen body'nin tum alanlarini logla
+  const bodyKeys = Object.keys(body || {})
+  console.log("[REGISTER] Body keys:", bodyKeys.join(", "))
+  console.log("[REGISTER] Body alan detaylari:")
+  for (const key of bodyKeys) {
+    console.log(`  - ${key}: "${body[key]}" (${typeof body[key]})`)
+  }
+
   // Zorunlu alan kontrolu - sadece name ve phone zorunlu (Tally'den gelenler)
   if (!body.name) {
+    console.error("[REGISTER] EKSIK ALAN: 'name' bulunamadi. Gelen keys:", bodyKeys.join(", "))
     return NextResponse.json(
-      { success: false, message: "Missing required field: name" },
+      { success: false, message: "Missing required field: name", receivedFields: bodyKeys },
       { status: 400 }
     )
   }
@@ -35,48 +54,62 @@ export async function POST(request: NextRequest) {
   // Email: verilmediyse studentNumber@coachify.local olustur
   const studentEmail = body.email || (body.studentNumber ? `${body.studentNumber}@coachify.local` : null)
   if (!studentEmail) {
+    console.error("[REGISTER] EKSIK ALAN: 'email' ve 'studentNumber' ikisi de bos. name:", body.name)
     return NextResponse.json(
-      { success: false, message: "Missing required: email or studentNumber" },
+      { success: false, message: "Missing required: email or studentNumber", receivedFields: bodyKeys },
       { status: 400 }
     )
   }
+  console.log("[REGISTER] Kullanilacak email:", studentEmail)
 
   // Duplicate ogrenci kontrolu
+  console.log("[REGISTER] Duplicate kontrolu yapiliyor...")
   const existing = await prisma.student.findUnique({
     where: { email: studentEmail },
   })
   if (existing) {
+    console.error("[REGISTER] DUPLICATE: Bu email zaten kayitli. studentId:", existing.id, "name:", existing.name)
     return NextResponse.json(
-      { success: false, message: "Student already exists", data: { studentId: existing.id } },
+      { success: false, message: "Student already exists", data: { studentId: existing.id, name: existing.name, email: studentEmail } },
       { status: 409 }
     )
   }
+  console.log("[REGISTER] Duplicate kontrolu gecti, yeni kayit")
 
   // Mentor bul - email veya isim ile
+  console.log("[REGISTER] Mentor araniyor - mentorEmail:", body.mentorEmail || "yok", "mentorName:", body.mentorName || "yok")
   let mentor = null
   if (body.mentorEmail) {
     mentor = await prisma.mentor.findFirst({ where: { email: body.mentorEmail } })
+    console.log("[REGISTER] Email ile mentor arama sonucu:", mentor ? `Bulundu: ${mentor.name} (${mentor.id})` : "Bulunamadi")
   }
   if (!mentor && body.mentorName) {
     mentor = await prisma.mentor.findFirst({
       where: { name: { equals: body.mentorName, mode: "insensitive" } },
     })
+    console.log("[REGISTER] Isim ile mentor arama sonucu:", mentor ? `Bulundu: ${mentor.name} (${mentor.id})` : "Bulunamadi")
   }
   if (!mentor) {
     const search = body.mentorEmail || body.mentorName || "none"
+    console.error("[REGISTER] MENTOR BULUNAMADI - Aranan:", search)
     return NextResponse.json(
       { success: false, message: `Mentor not found: ${search}` },
       { status: 404 }
     )
   }
+  console.log("[REGISTER] Mentor belirlendi:", mentor.name, "(", mentor.id, ")")
 
   const adminUserId = await getAdminUserId()
+  console.log("[REGISTER] Admin userId:", adminUserId)
 
   try {
+    console.log("[REGISTER] Transaction basliyor...")
     const result = await prisma.$transaction(async (tx) => {
       const startDate = body.startDate ? new Date(body.startDate) : new Date()
+      console.log("[REGISTER] StartDate:", startDate.toISOString())
 
       // Student olustur
+      console.log("[REGISTER] Student olusturuluyor - name:", body.name, "email:", studentEmail)
       const student = await tx.student.create({
         data: {
           name: body.name,
@@ -119,7 +152,10 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      console.log("[REGISTER] Student olusturuldu - ID:", student.id)
+
       // Assignment olustur
+      console.log("[REGISTER] Assignment olusturuluyor - student:", student.id, "mentor:", mentor.id)
       const assignment = await tx.studentAssignment.create({
         data: {
           studentId: student.id,
@@ -128,7 +164,10 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      console.log("[REGISTER] Assignment olusturuldu - ID:", assignment.id)
+
       // Audit log - student
+      console.log("[REGISTER] Audit loglar yaziliyor...")
       await createLog({
         entityType: "student",
         entityId: student.id,
@@ -153,8 +192,13 @@ export async function POST(request: NextRequest) {
       return { student, assignment }
     })
 
+    console.log("[REGISTER] Transaction basariyla tamamlandi!")
+    console.log("[REGISTER] Student:", result.student.name, "(", result.student.id, ")")
+    console.log("[REGISTER] Assignment ID:", result.assignment.id)
+
     // Google Sheets sync (fire-and-forget)
     if (isSheetsEnabled()) {
+      console.log("[REGISTER] Google Sheets sync basliyor...")
       try {
         await appendStudentRow({
           name: result.student.name,
@@ -178,11 +222,16 @@ export async function POST(request: NextRequest) {
           contactPreference: result.student.contactPreference || undefined,
           sendMessage: result.student.sendMessage,
         })
+        console.log("[REGISTER] Google Sheets sync basarili")
       } catch (sheetsError) {
         console.error("[SHEETS] Failed to append student row:", sheetsError)
       }
+    } else {
+      console.log("[REGISTER] Google Sheets sync devre disi (GOOGLE_SHEETS_ENABLED=false)")
     }
 
+    const duration = Date.now() - startTime
+    console.log(`[REGISTER] === BASARILI === Toplam sure: ${duration}ms`)
     return NextResponse.json(
       {
         success: true,
@@ -198,10 +247,16 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error: any) {
-    console.error("[WEBHOOK] Register error:", error)
+    const duration = Date.now() - startTime
+    console.error(`[REGISTER] === HATA === Transaction basarisiz (${duration}ms)`)
+    console.error("[REGISTER] Hata kodu:", error.code || "yok")
+    console.error("[REGISTER] Hata mesaji:", error.message)
+    console.error("[REGISTER] Hata detayi:", error.meta || "yok")
+    console.error("[REGISTER] Full error:", error)
 
     // Prisma unique constraint hatasi
     if (error.code === "P2002") {
+      console.error("[REGISTER] Prisma unique constraint hatasi - zaten mevcut kayit")
       return NextResponse.json(
         { success: false, message: "Student already exists (race condition)" },
         { status: 409 }
@@ -209,7 +264,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: "Internal server error", error: error.message },
       { status: 500 }
     )
   }

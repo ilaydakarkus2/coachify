@@ -32,7 +32,7 @@ export default function Home() {
             Admin: admin@coachify.com / admin123
           </p>
           <p className="text-xs text-brand-silver/30">
-            Mentor: efe@coachify.com / efe123
+            Mentor: beyza@coachify.com/ mentor123
           </p>
         </div>
       </div>
