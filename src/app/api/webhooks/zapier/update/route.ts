@@ -35,13 +35,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: "studentNumber must be an integer" }, { status: 400 })
   }
 
-  // Zorunlu: startDate veya endDate en az biri olmali
-  if (!body.startDate && !body.endDate) {
-    console.error("[UPDATE] EKSIK: startDate ve endDate ikisi de bos")
-    return NextResponse.json(
-      { success: false, message: "At least one of startDate or endDate is required" },
-      { status: 400 }
-    )
+  // Zorunlu: membershipType
+  if (!body.membershipType) {
+    console.error("[UPDATE] EKSIK: membershipType")
+    return NextResponse.json({ success: false, message: "Missing required field: membershipType" }, { status: 400 })
   }
 
   // Ogrenciyi bul
@@ -57,15 +54,11 @@ export async function POST(request: NextRequest) {
       { status: 404 }
     )
   }
-  console.log("[UPDATE] Ogrenci bulundu:", student.name, "- mevcut startDate:", student.startDate, "endDate:", student.endDate)
+  console.log("[UPDATE] Ogrenci bulundu:", student.name, "- mevcut membershipType:", student.membershipType)
 
   // Guncellenecek veriyi hazirla
-  const updateData: any = {}
-  if (body.startDate) {
-    updateData.startDate = new Date(body.startDate)
-  }
-  if (body.endDate !== undefined) {
-    updateData.endDate = body.endDate ? new Date(body.endDate) : null
+  const updateData: any = {
+    membershipType: body.membershipType,
   }
 
   try {
@@ -82,31 +75,28 @@ export async function POST(request: NextRequest) {
       entityType: "student",
       entityId: student.id,
       action: "updated",
-      description: `Zapier webhook: tarih güncelleme - ${student.name}`,
+      description: `Zapier webhook: üyelik güncelleme - ${student.name}`,
       userId: adminUserId,
       studentId: student.id,
       metadata: {
         source: "zapier_webhook",
         flow: "update",
         studentNumber: studentNum,
-        previousStartDate: student.startDate.toISOString(),
-        previousEndDate: student.endDate?.toISOString() || null,
-        newStartDate: updatedStudent.startDate.toISOString(),
-        newEndDate: updatedStudent.endDate?.toISOString() || null,
+        previousMembershipType: student.membershipType,
+        newMembershipType: updatedStudent.membershipType,
       },
     })
 
-    console.log(`[UPDATE] BASARILI - ${updatedStudent.name} | startDate: ${updatedStudent.startDate.toISOString()} | endDate: ${updatedStudent.endDate?.toISOString() || "null"} | ${duration}ms`)
+    console.log(`[UPDATE] BASARILI - ${updatedStudent.name} | membershipType: ${student.membershipType} -> ${updatedStudent.membershipType} | ${duration}ms`)
 
     return NextResponse.json({
       success: true,
-      message: "Student dates updated",
+      message: "Student updated",
       data: {
         studentId: updatedStudent.id,
         studentNumber: studentNum,
         name: updatedStudent.name,
-        startDate: updatedStudent.startDate.toISOString().split("T")[0],
-        endDate: updatedStudent.endDate?.toISOString().split("T")[0] || null,
+        membershipType: updatedStudent.membershipType,
       },
     })
   } catch (error: any) {
