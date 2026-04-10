@@ -44,6 +44,7 @@ model Student {
   id              String             @id @default(uuid())
   name            String
   email           String             @unique
+  studentNumber   Int?               @unique
   phone           String
   school          String
   grade           String
