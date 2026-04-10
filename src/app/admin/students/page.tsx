@@ -396,9 +396,84 @@ export default function StudentsPage() {
           </div>
         </div>
 
-        {/* Yeni Öğrenci Formu Modalı */}
+        {/* Yeni Öğrenci Formu */}
         {showForm && (
-          <AdminNav />
+          <div className="bg-white p-6 rounded-2xl shadow-xl border border-brand-silver/10 mb-6">
+            <h3 className="text-xl font-bold text-brand-dark mb-4">Yeni Öğrenci Ekle</h3>
+            <form onSubmit={handleCreateSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Ad Soyad *</label>
+                  <input type="text" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">E-posta *</label>
+                  <input type="email" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Telefon</label>
+                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Okul</label>
+                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.school} onChange={(e) => setFormData({ ...formData, school: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf</label>
+                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Mentor *</label>
+                  <select required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.mentorId} onChange={(e) => setFormData({ ...formData, mentorId: e.target.value })}>
+                    <option value="">Mentor Seç</option>
+                    {mentors.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Başlangıç Tarihi</label>
+                  <input type="date" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Üyelik Türü *</label>
+                  <select required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.membershipType} onChange={(e) => setFormData({ ...formData, membershipType: e.target.value })}>
+                    <option value="1_aylik">1 Aylık</option>
+                    <option value="yks_kadar">YKS'ye Kadar</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
+                  <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-2">Veli Bilgileri</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Veli Adı Soyadı</label>
+                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentName} onChange={(e) => setFormData({ ...formData, parentName: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Veli Telefonu</label>
+                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentPhone} onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">İletişim Tercihi</label>
+                  <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.contactPreference} onChange={(e) => setFormData({ ...formData, contactPreference: e.target.value })}>
+                    <option value="">Belirtilmedi</option>
+                    <option value="student">Öğrenci</option>
+                    <option value="parent">Veli</option>
+                    <option value="both">Hem Öğrenci Hem Veli</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">İndirim Kodu</label>
+                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.discountCode} onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Özel Açıklama</label>
+                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialNote} onChange={(e) => setFormData({ ...formData, specialNote: e.target.value })} />
+                </div>
+              </div>
+              <button type="submit" className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-2 shadow-lg shadow-brand-primary/20">Öğrenci Ekle</button>
+            </form>
+          </div>
         )}
 
         {/* Düzenleme Formu Modalı */}
@@ -499,8 +574,8 @@ export default function StudentsPage() {
                         <label className="block text-sm font-bold text-brand-muted mb-1">Üyelik Türü</label>
                         <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.membershipType} onChange={(e) => setEditFormData({ ...editFormData, membershipType: e.target.value })}>
                           <option value="">Belirtilmedi</option>
-                          <option value="new">Yeni</option>
-                          <option value="renewal">Yenileme</option>
+                          <option value="1_aylik">1 Aylık</option>
+                          <option value="yks_kadar">YKS'ye Kadar</option>
                         </select>
                     </div>
                     <div>
@@ -556,6 +631,7 @@ export default function StudentsPage() {
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Ödeme</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">İletişim</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Üyelik Türü</th>
                   <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">İşlemler</th>
                 </tr>
               </thead>
@@ -614,6 +690,19 @@ export default function StudentsPage() {
 	                        {student.contactPreference === "both" ? "Hem Öğr. Hem Veli" :
 	                         student.contactPreference === "parent" ? "Veli" :
 	                         student.contactPreference === "student" ? "Öğrenci" :
+	                         "Belirtilmedi"}
+	                      </span>
+	                    </td>
+	                    <td className="px-6 py-5 whitespace-nowrap">
+	                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
+	                        student.membershipType === "yks_kadar" ? "bg-indigo-100 text-indigo-700 border border-indigo-200" :
+	                        student.membershipType === "1_aylik" ? "bg-cyan-100 text-cyan-700 border border-cyan-200" :
+	                        "bg-gray-100 text-gray-400"
+	                      }`}>
+	                        {student.membershipType === "yks_kadar" ? "YKS'ye Kadar" :
+	                         student.membershipType === "1_aylik" ? "1 Aylık" :
+	                         student.membershipType === "new" ? "Yeni" :
+	                         student.membershipType === "renewal" ? "Yenileme" :
 	                         "Belirtilmedi"}
 	                      </span>
 	                    </td>
