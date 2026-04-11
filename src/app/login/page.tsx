@@ -114,19 +114,6 @@ export default function LoginPage() {
             </button>
           </form>
         </div>
-
-        {/* Demo info */}
-        <div className="mt-6 text-center">
-          <p className="text-xs font-bold text-brand-silver/40 uppercase tracking-widest mb-2">
-            Demo Hesapları
-          </p>
-          <p className="text-xs text-brand-silver/30">
-            Admin: admin@coachify.com / admin123
-          </p>
-          <p className="text-xs text-brand-silver/30">
-            Mentor: efe@coachify.com / efe123
-          </p>
-        </div>
       </div>
     </div>
   )
