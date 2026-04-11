@@ -23,18 +23,6 @@ export default function Home() {
         >
           Giriş Yap
         </Link>
-
-        <div className="mt-8 space-y-1">
-          <p className="text-xs font-bold text-brand-silver/40 uppercase tracking-widest mb-2">
-            Demo Hesapları
-          </p>
-          <p className="text-xs text-brand-silver/30">
-            Admin: admin@coachify.com / admin123
-          </p>
-          <p className="text-xs text-brand-silver/30">
-            Mentor: beyza@coachify.com/ mentor123
-          </p>
-        </div>
       </div>
     </div>
   )
