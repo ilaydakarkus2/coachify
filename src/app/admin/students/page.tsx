@@ -29,6 +29,7 @@ interface Student {
   contactPreference?: string | null
   sendMessage?: boolean
   membershipType?: string | null
+  packageType?: string | null
   discountCode?: string | null
   studentAssignments: Array<{
     mentor: {
@@ -65,7 +66,8 @@ export default function StudentsPage() {
     targetNetScore: "",
     specialNote: "",
     contactPreference: "",
-    membershipType: "1_aylik",
+    membershipType: "new",
+    packageType: "1_aylik",
     discountCode: "",
   })
   const [editFormData, setEditFormData] = useState({
@@ -88,6 +90,7 @@ export default function StudentsPage() {
     contactPreference: "",
     sendMessage: false,
     membershipType: "",
+    packageType: "",
     discountCode: "",
     mentorId: "",
   })
@@ -174,7 +177,8 @@ export default function StudentsPage() {
         targetNetScore: "",
         specialNote: "",
         contactPreference: "",
-        membershipType: "1_aylik",
+        membershipType: "new",
+        packageType: "1_aylik",
         discountCode: "",
       })
       fetchStudents()
@@ -328,6 +332,7 @@ export default function StudentsPage() {
       contactPreference: student.contactPreference || "",
       sendMessage: student.sendMessage || false,
       membershipType: student.membershipType || "",
+      packageType: student.packageType || "",
       discountCode: student.discountCode || "",
       mentorId: student.studentAssignments?.[0]?.mentor?.id || "",
     })
@@ -436,8 +441,8 @@ export default function StudentsPage() {
                   <input type="date" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Üyelik Türü *</label>
-                  <select required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.membershipType} onChange={(e) => setFormData({ ...formData, membershipType: e.target.value })}>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Paket Türü *</label>
+                  <select required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.packageType} onChange={(e) => setFormData({ ...formData, packageType: e.target.value })}>
                     <option value="1_aylik">1 Aylık</option>
                     <option value="yks_kadar">YKS'ye Kadar</option>
                   </select>
@@ -571,13 +576,14 @@ export default function StudentsPage() {
                         <input type="number" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.targetNetScore} onChange={(e) => setEditFormData({ ...editFormData, targetNetScore: e.target.value })} />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-brand-muted mb-1">Üyelik Türü</label>
+                        <label className="block text-sm font-bold text-brand-muted mb-1">Kayıt Türü</label>
                         <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.membershipType} onChange={(e) => setEditFormData({ ...editFormData, membershipType: e.target.value })}>
                           <option value="">Belirtilmedi</option>
-                          <option value="1_aylik">1 Aylık</option>
-                          <option value="yks_kadar">YKS'ye Kadar</option>
+                          <option value="new">Yeni</option>
+                          <option value="renewal">Yenileme</option>
                         </select>
                     </div>
+                    <div>                        <label className="block text-sm font-bold text-brand-muted mb-1">Paket Türü</label>                        <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.packageType} onChange={(e) => setEditFormData({ ...editFormData, packageType: e.target.value })}>                          <option value="">Belirtilmedi</option>                          <option value="1_aylik">1 Aylık</option>                          <option value="yks_kadar">YKS'ye Kadar</option>                        </select>                    </div>
                     <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">İndirim Kodu</label>
                         <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.discountCode} onChange={(e) => setEditFormData({ ...editFormData, discountCode: e.target.value })} />
@@ -631,7 +637,8 @@ export default function StudentsPage() {
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Ödeme</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">İletişim</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Üyelik Türü</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Paket</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Kayıt</th>
                   <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">İşlemler</th>
                 </tr>
               </thead>
@@ -693,19 +700,28 @@ export default function StudentsPage() {
 	                         "Belirtilmedi"}
 	                      </span>
 	                    </td>
-	                    <td className="px-6 py-5 whitespace-nowrap">
-	                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
-	                        student.membershipType === "yks_kadar" ? "bg-indigo-100 text-indigo-700 border border-indigo-200" :
-	                        student.membershipType === "1_aylik" ? "bg-cyan-100 text-cyan-700 border border-cyan-200" :
-	                        "bg-gray-100 text-gray-400"
-	                      }`}>
-	                        {student.membershipType === "yks_kadar" ? "YKS'ye Kadar" :
-	                         student.membershipType === "1_aylik" ? "1 Aylık" :
-	                         student.membershipType === "new" ? "Yeni" :
-	                         student.membershipType === "renewal" ? "Yenileme" :
-	                         "Belirtilmedi"}
-	                      </span>
-	                    </td>
+	                                        <td className="px-6 py-5 whitespace-nowrap">
+                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
+                        student.packageType === "yks_kadar" ? "bg-indigo-100 text-indigo-700 border border-indigo-200" :
+                        student.packageType === "1_aylik" ? "bg-cyan-100 text-cyan-700 border border-cyan-200" :
+                        "bg-gray-100 text-gray-400"
+                      }`}>
+                        {student.packageType === "yks_kadar" ? "YKS'ye Kadar" :
+                         student.packageType === "1_aylik" ? "1 Aylık" :
+                         "Belirtilmedi"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 whitespace-nowrap">
+                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
+                        student.membershipType === "new" ? "bg-green-100 text-green-700" :
+                        student.membershipType === "renewal" ? "bg-blue-100 text-blue-700" :
+                        "bg-gray-100 text-gray-400"
+                      }`}>
+                        {student.membershipType === "new" ? "Yeni" :
+                         student.membershipType === "renewal" ? "Yenileme" :
+                         "Belirtilmedi"}
+                      </span>
+                    </td>
 	                    <td className="px-6 py-5 whitespace-nowrap text-right space-x-3">
                       <button onClick={() => openEditForm(student)} className="text-brand-primary hover:text-brand-logo font-bold text-xs uppercase transition-colors">Düzenle</button>
                       {student.status === "active" && (

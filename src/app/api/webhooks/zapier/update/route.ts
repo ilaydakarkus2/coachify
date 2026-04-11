@@ -35,11 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: "studentNumber must be an integer" }, { status: 400 })
   }
 
-  // Zorunlu: membershipType
-  if (!body.membershipType) {
-    console.error("[UPDATE] EKSIK: membershipType")
-    return NextResponse.json({ success: false, message: "Missing required field: membershipType" }, { status: 400 })
-  }
+  // Zorunlu: membershipType veya packageType (aşağıda kontrol ediliyor)
 
   // Ogrenciyi bul
   console.log("[UPDATE] Ogrenci araniyor - studentNumber:", studentNum)
@@ -56,10 +52,19 @@ export async function POST(request: NextRequest) {
   }
   console.log("[UPDATE] Ogrenci bulundu:", student.name, "- mevcut membershipType:", student.membershipType)
 
-  // Guncellenecek veriyi hazirla
-  const updateData: any = {
-    membershipType: body.membershipType,
+  // Zorunlu alan: membershipType veya packageType en az biri olmali
+  if (!body.membershipType && !body.packageType) {
+    console.error("[UPDATE] EKSIK: membershipType veya packageType gerekli")
+    return NextResponse.json(
+      { success: false, message: "Missing required: membershipType or packageType" },
+      { status: 400 }
+    )
   }
+
+  // Guncellenecek veriyi hazirla
+  const updateData: any = {}
+  if (body.membershipType) updateData.membershipType = body.membershipType
+  if (body.packageType) updateData.packageType = body.packageType
 
   try {
     const updatedStudent = await prisma.student.update({

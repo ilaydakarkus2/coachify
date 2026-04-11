@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
           // purchaseDate (SAG) değişmez — yenileme sırasında sabit kalır
           // Yenileme bilgileri
           membershipType: "renewal",
+          packageType: body.packageType || student.packageType || null,
           discountCode: body.discountCode || student.discountCode,
           stripeId: body.stripeId || student.stripeId,
           contactPreference: body.contactPreference || student.contactPreference,

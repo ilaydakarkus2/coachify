@@ -86,6 +86,7 @@ model Student {
 
   // Tally formu
   membershipType    String?        // "new" / "renewal"
+  packageType       String?        // "1_aylik" / "yks_kadar"
   discountCode      String?        // İndirim kodu
 
   // Stripe

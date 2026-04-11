@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
         specialNote: specialNote || null,
         // Tally formu
         membershipType: membershipType || "new",
+        packageType: body.packageType || null,
         discountCode: discountCode || null,
         // Stripe
         stripeId: stripeId || null,

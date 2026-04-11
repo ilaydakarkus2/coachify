@@ -76,15 +76,19 @@ export async function POST(request: NextRequest) {
   }
 
   // membershipType mapping (Tally'den Türkçe gelebilir)
-  if (body.membershipType) {
-    const mt = body.membershipType.toLowerCase()
-    if (mt.includes("1") && (mt.includes("ay") || mt.includes("aylik") || mt.includes("ylık"))) {
-      body.membershipType = "1_aylik"
-    } else if (mt.includes("yks") || mt.includes("kadar")) {
-      body.membershipType = "yks_kadar"
+  // membershipType = kayit turu (new/renewal), packageType = paket turu (1_aylik/yks_kadar)
+  let packageType = "1_aylik"
+  if (body.membershipType || body.packageType) {
+    const raw = (body.packageType || body.membershipType || "").toLowerCase()
+    if (raw.includes("yks") || raw.includes("kadar")) {
+      packageType = "yks_kadar"
+    } else if (raw.includes("1") && (raw.includes("ay") || raw.includes("ylık"))) {
+      packageType = "1_aylik"
     }
-    console.log("[REGISTER] membershipType mapped to:", body.membershipType)
+    console.log("[REGISTER] packageType mapped to:", packageType)
   }
+  body.packageType = packageType
+  body.membershipType = "new" // Yeni kayit her zaman "new"
 
   // Duplicate ogrenci kontrolu - email
   console.log("[REGISTER] Duplicate kontrolu yapiliyor...")
@@ -149,16 +153,16 @@ export async function POST(request: NextRequest) {
       const startDate = body.startDate ? new Date(body.startDate) : new Date()
       console.log("[REGISTER] StartDate:", startDate.toISOString())
 
-      // EndDate hesaplama - uyelik turune gore
+      // EndDate hesaplama - paket turune gore
       let endDate: Date | null = null
-      const membershipType = body.membershipType || "1_aylik"
+      const pkgType = body.packageType || "1_aylik"
 
-      if (membershipType === "1_aylik") {
+      if (pkgType === "1_aylik") {
         // 4 hafta = 28 gun
         endDate = new Date(startDate)
         endDate.setDate(endDate.getDate() + 28)
         console.log("[REGISTER] EndDate hesaplandi (4 hafta):", endDate.toISOString())
-      } else if (membershipType === "yks_kadar") {
+      } else if (pkgType === "yks_kadar") {
         // YKS 2026: 14-15 Haziran 2026 -> 15 Haziran 2026 olarak set et
         endDate = new Date("2026-06-15")
         console.log("[REGISTER] EndDate hesaplandi (YKS):", endDate.toISOString())
@@ -194,6 +198,7 @@ export async function POST(request: NextRequest) {
           specialNote: body.specialNote || null,
           // Tally formu
           membershipType: body.membershipType || "new",
+          packageType: body.packageType || "1_aylik",
           discountCode: body.discountCode || null,
           // Stripe
           stripeId: body.stripeId || null,

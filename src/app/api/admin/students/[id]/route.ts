@@ -82,7 +82,7 @@ export async function PATCH(
             parentName, parentPhone, currentNetScore, targetNetScore,
             specialNote, dropReason, refundStatus, mentorChangeNote,
             droppedMonth, searchDay, searchMonth, contactPreference,
-            sendMessage, membershipType, discountCode, stripeId } = body
+            sendMessage, membershipType, packageType, discountCode, stripeId } = body
 
     // Get current student for comparison
     const currentStudent = await prisma.student.findUnique({
@@ -120,6 +120,7 @@ export async function PATCH(
     if (sendMessage !== undefined) updateData.sendMessage = sendMessage
     if (membershipType !== undefined) updateData.membershipType = membershipType || null
     if (discountCode !== undefined) updateData.discountCode = discountCode || null
+    if (packageType !== undefined) updateData.packageType = packageType || null
     if (stripeId !== undefined) updateData.stripeId = stripeId || null
 
     // Update student
