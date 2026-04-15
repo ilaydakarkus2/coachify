@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import AdminNav from "@/components/AdminNav"
+
 
 interface Assignment {
   id: string
@@ -71,6 +71,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter()
   const [student, setStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(true)
+  const [reactivating, setReactivating] = useState(false)
 
   useEffect(() => {
     fetchStudent()
@@ -88,9 +89,30 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
+  const handleReactivate = async () => {
+    if (!student) return
+    if (!confirm(`"${student.name}" adlı öğrenciyi yeniden aktifleştirmek istediğinize emin misiniz?\n\nSon atama yeniden açılacak ve sonlandırma hakedişleri iptal edilecek.`)) return
+
+    setReactivating(true)
+    try {
+      const res = await fetch(`/api/admin/students/${id}/reactivate`, { method: "POST" })
+      if (res.ok) {
+        fetchStudent()
+      } else {
+        const data = await res.json()
+        alert(data.error || "Yeniden aktifleştirme başarısız")
+      }
+    } catch (error) {
+      console.error("Yeniden aktifleştirme hatası:", error)
+      alert("Bir hata oluştu")
+    } finally {
+      setReactivating(false)
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-ghost flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-brand-muted font-bold text-lg">Yükleniyor...</div>
       </div>
     )
@@ -98,7 +120,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
   if (!student) {
     return (
-      <div className="min-h-screen bg-brand-ghost flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <p className="text-brand-muted font-bold text-lg mb-4">Öğrenci bulunamadı.</p>
           <Link href="/admin/students" className="bg-brand-logo text-white px-6 py-2 rounded-xl font-bold">Öğrencilere Dön</Link>
@@ -136,10 +158,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="min-h-screen bg-brand-ghost">
-      <AdminNav />
-
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <>
         {/* Üst Başlık */}
         <div className="flex items-center gap-4 mb-8">
           <Link href="/admin/students" className="text-brand-logo hover:text-brand-dark font-bold text-sm transition-colors">
@@ -148,6 +167,15 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           <div className="h-6 w-px bg-brand-silver/30" />
           <h1 className="text-2xl font-black text-brand-dark">{student.name}</h1>
           {statusBadge(student.status)}
+          {(student.status === "dropped" || student.status === "refunded") && (
+            <button
+              onClick={handleReactivate}
+              disabled={reactivating}
+              className="ml-auto px-5 py-2 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition-all disabled:opacity-50 shadow-lg shadow-green-600/20"
+            >
+              {reactivating ? "Aktifleştiriliyor..." : "Yeniden Aktifleştir"}
+            </button>
+          )}
         </div>
 
         {/* Öğrenci Bilgileri Kartı */}
@@ -366,7 +394,6 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             <p className="text-brand-silver italic font-medium">Aktivite kaydı bulunamadı.</p>
           )}
         </div>
-      </div>
-    </div>
+    </>
   )
 }

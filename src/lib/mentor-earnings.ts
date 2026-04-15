@@ -253,37 +253,45 @@ export async function calculatePendingEarnings(adminUserId: string): Promise<num
     }
   })
 
+  if (assignments.length === 0) return 0
+
+  // Batch: tum aktif earnings kayitlarini tek sorguda cek (N+1 onleme)
+  const assignmentIds = assignments.map(a => a.id)
+  const allExistingEarnings = await prisma.mentorEarning.findMany({
+    where: {
+      assignmentId: { in: assignmentIds },
+      status: { not: "cancelled" }
+    },
+    orderBy: { cycleDate: "asc" }
+  })
+
+  // Assignment ID'ye gore grupla
+  const earningsByAssignment = new Map<string, typeof allExistingEarnings>()
+  for (const e of allExistingEarnings) {
+    if (!earningsByAssignment.has(e.assignmentId)) {
+      earningsByAssignment.set(e.assignmentId, [])
+    }
+    earningsByAssignment.get(e.assignmentId)!.push(e)
+  }
+
   let created = 0
 
   for (const assignment of assignments) {
     const assignmentEnd = assignment.endDate ?? now
 
-    // Bu ogrencinin tum donem tarihlerini al (SAG=purchaseDate, fallback=startDate)
     const sag = assignment.student.purchaseDate ?? assignment.student.startDate
     const allCycleDates = getAllCycleDates(sag, now)
-
-    // Bu atamanin baslangicindan sonraki donemleri filtrele
     const cycleDates = allCycleDates.filter(d => d > assignment.startDate)
 
     if (cycleDates.length === 0) continue
 
-    // Bu atama icin zaten var olan kayitlari al
-    const existingRecords = await prisma.mentorEarning.findMany({
-      where: {
-        assignmentId: assignment.id,
-        status: { not: "cancelled" }
-      },
-      orderBy: { cycleDate: "asc" }
-    })
+    const existingRecords = earningsByAssignment.get(assignment.id) || []
 
-    // Kumulatif takip: her cycle date icin kumulatif toplam hafta
     let runningTotal = 0
 
     for (const cycleDate of cycleDates) {
-      // Bu donem zaten var mi kontrol et
       const exists = existingRecords.some(r => isSameDay(r.cycleDate, cycleDate))
       if (exists) {
-        // Var olan kaydin kumulatif katkisini hesapla
         const effectiveEnd = cycleDate < assignmentEnd ? cycleDate : assignmentEnd
         const { completedWeeks: cumulative } = calculateMentorEarning(
           assignment.startDate, effectiveEnd, weeklyRate
@@ -292,13 +300,11 @@ export async function calculatePendingEarnings(adminUserId: string): Promise<num
         continue
       }
 
-      // Bu cycle date'e kadar kumulatif tamamlanan hafta
       const effectiveEnd = cycleDate < assignmentEnd ? cycleDate : assignmentEnd
       const { completedWeeks: cumulativeWeeks } = calculateMentorEarning(
         assignment.startDate, effectiveEnd, weeklyRate
       )
 
-      // Increment = bu donemin yeni haftasi
       const incrementWeeks = cumulativeWeeks - runningTotal
       runningTotal = cumulativeWeeks
 
@@ -351,7 +357,6 @@ export async function calculatePendingEarnings(adminUserId: string): Promise<num
 export async function calculatePendingEarningsForMentor(mentorId: string, adminUserId: string): Promise<number> {
   const weeklyRate = await getWeeklyRate()
   const now = new Date()
-  // 3 ay sonrasina kadar olan donemleri de hesapla (beklenen odemeler icin)
   const futureDate = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate())
 
   const assignments = await prisma.studentAssignment.findMany({
@@ -363,27 +368,38 @@ export async function calculatePendingEarningsForMentor(mentorId: string, adminU
     }
   })
 
+  if (assignments.length === 0) return 0
+
+  // Batch: tum earnings tek sorguda
+  const assignmentIds = assignments.map(a => a.id)
+  const allExistingEarnings = await prisma.mentorEarning.findMany({
+    where: {
+      assignmentId: { in: assignmentIds },
+      status: { not: "cancelled" }
+    },
+    orderBy: { cycleDate: "asc" }
+  })
+
+  const earningsByAssignment = new Map<string, typeof allExistingEarnings>()
+  for (const e of allExistingEarnings) {
+    if (!earningsByAssignment.has(e.assignmentId)) {
+      earningsByAssignment.set(e.assignmentId, [])
+    }
+    earningsByAssignment.get(e.assignmentId)!.push(e)
+  }
+
   let created = 0
 
   for (const assignment of assignments) {
     const sag = assignment.student.purchaseDate ?? assignment.student.startDate
     const studentEnd = assignment.student.endDate ? new Date(assignment.student.endDate) : null
-    // Cycle date'leri futureDate'e kadar üret (studentEndDate ile kesme!
-    // Çünkü cycle date = ödeme tarihidir, mentorun çalıştığı dönem sonrasına denk gelebilir)
     const allCycleDates = getAllCycleDates(sag, futureDate)
     const cycleDates = allCycleDates.filter(d => d > assignment.startDate)
 
     if (cycleDates.length === 0) continue
 
-    const existingRecords = await prisma.mentorEarning.findMany({
-      where: {
-        assignmentId: assignment.id,
-        status: { not: "cancelled" }
-      },
-      orderBy: { cycleDate: "asc" }
-    })
+    const existingRecords = earningsByAssignment.get(assignment.id) || []
 
-    // Atama bitis tarihi: assignment.endDate > student.endDate > null
     const assignmentEndDate = assignment.endDate
       ? new Date(assignment.endDate)
       : studentEnd

@@ -267,7 +267,6 @@ export async function DELETE(
   { params }: RouteParams
 ) {
   try {
-    // 1. ADIM: Params'ı await et
     const { id } = await params;
 
     const student = await prisma.student.findUnique({
@@ -278,21 +277,27 @@ export async function DELETE(
       return NextResponse.json({ error: "Student not found" }, { status: 404 })
     }
 
-    await prisma.student.delete({
-      where: { id: id }
-    })
+    const adminUserId = await getAdminUserId()
 
-    // Log the deletion
-    try {
-      const adminUserId = await getAdminUserId()
-      await prisma.log.create({
+    await prisma.$transaction(async (tx) => {
+      // Once loglari sil (FK constraint)
+      await tx.log.deleteMany({
+        where: { studentId: id }
+      })
+
+      // Sonra ogrenciyi sil (cascade payments, assignments, earnings)
+      await tx.student.delete({
+        where: { id: id }
+      })
+
+      // Silme kaydini tut (studentId olmadan,FK constraint yok)
+      await tx.log.create({
         data: {
           entityType: "student",
           entityId: id,
           action: "deleted",
           description: `Öğrenci silindi: ${student.name}`,
           userId: adminUserId,
-          studentId: id,
           metadata: {
             name: student.name,
             email: student.email,
@@ -300,9 +305,7 @@ export async function DELETE(
           }
         }
       })
-    } catch (logError) {
-      console.error("[API] Warning: Failed to create deletion log:", logError)
-    }
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

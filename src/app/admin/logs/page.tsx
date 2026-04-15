@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import AdminNav from "@/components/AdminNav"
+
 
 interface Log {
   id: string
@@ -78,11 +78,7 @@ export default function LogsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-ghost">
-      {/* Üst Bar (Header) */}
-      <AdminNav />
-
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <>
         <h2 className="text-2xl font-bold text-brand-dark mb-6">İşlem Kayıtları</h2>
 
         {/* Filtreler */}
@@ -259,7 +255,6 @@ export default function LogsPage() {
             </div>
           )}
         </div>
-      </div>
 
       {/* Log Detay Modalı */}
       {selectedLog && (
@@ -329,5 +324,5 @@ export default function LogsPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )}

@@ -5,36 +5,27 @@ import type { NextRequest } from "next/server"
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Mentor rotalarini koru
-  if (pathname.startsWith("/mentor")) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-    if (!token || token.role !== "mentor") {
-      return NextResponse.redirect(new URL("/login", request.url))
-    }
+  // Tek getToken cagrisi - path'e gore rol kontrolu yap
+  const isAdmin = pathname.startsWith("/admin") || pathname.startsWith("/api/admin")
+  const isMentor = pathname.startsWith("/mentor") || pathname.startsWith("/api/mentor")
+
+  if (!isAdmin && !isMentor) return NextResponse.next()
+
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+  if (!token) {
+    return isAdmin
+      ? NextResponse.redirect(new URL("/login", request.url)).headers.get("x-middleware-request")?.startsWith("text/html")
+        ? NextResponse.redirect(new URL("/login", request.url))
+        : NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 })
+      : NextResponse.redirect(new URL("/login", request.url))
   }
 
-  // Admin rotalarini koru
-  if (pathname.startsWith("/admin")) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-    if (!token || token.role !== "admin") {
-      return NextResponse.redirect(new URL("/login", request.url))
-    }
-  }
-
-  // Mentor API rotalarini koru
-  if (pathname.startsWith("/api/mentor")) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-    if (!token || token.role !== "mentor") {
-      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 })
-    }
-  }
-
-  // Admin API rotalarini koru
-  if (pathname.startsWith("/api/admin")) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-    if (!token || token.role !== "admin") {
-      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 })
-    }
+  const requiredRole = isAdmin ? "admin" : "mentor"
+  if (token.role !== requiredRole) {
+    const isApi = pathname.startsWith("/api/")
+    return isApi
+      ? NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 })
+      : NextResponse.redirect(new URL("/login", request.url))
   }
 
   return NextResponse.next()

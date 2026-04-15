@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import AdminNav from "@/components/AdminNav"
+
 
 interface Student {
   id: string
@@ -112,7 +112,9 @@ export default function StudentsPage() {
   const [extendData, setExtendData] = useState({ weeks: 1, reason: "" })
   const [extendLoading, setExtendLoading] = useState(false)
   const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
   const PAGE_SIZE = 20
+  const [reactivating, setReactivating] = useState<string | null>(null)
 
   const validatePhoneFormat = (value: string): string | null => {
     if (!value || value.trim() === "") return null
@@ -124,8 +126,11 @@ export default function StudentsPage() {
 
   useEffect(() => {
     setPage(1)
-    fetchStudents()
   }, [filters])
+
+  useEffect(() => {
+    fetchStudents()
+  }, [filters, page])
 
   useEffect(() => {
     fetch("/api/admin/mentors")
@@ -141,10 +146,13 @@ export default function StudentsPage() {
       if (filters.search) params.append("search", filters.search)
       if (filters.mentorId) params.append("mentorId", filters.mentorId)
       if (filters.paymentStatus) params.append("paymentStatus", filters.paymentStatus)
+      params.append("page", page.toString())
+      params.append("pageSize", PAGE_SIZE.toString())
 
       const res = await fetch(`/api/admin/students?${params.toString()}`)
       const data = await res.json()
-      setStudents(data)
+      setStudents(data.students || data)
+      setTotalCount(data.total ?? (Array.isArray(data) ? data.length : 0))
     } catch (error) {
       console.error("Failed to fetch students:", error)
     } finally {
@@ -293,6 +301,25 @@ export default function StudentsPage() {
     }
   }
 
+  const handleReactivate = async (studentId: string, studentName: string) => {
+    if (!confirm(`"${studentName}" adlı öğrenciyi yeniden aktifleştirmek istediğinize emin misiniz?`)) return
+
+    setReactivating(studentId)
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/reactivate`, { method: "POST" })
+      if (res.ok) {
+        fetchStudents()
+      } else {
+        const data = await res.json()
+        alert(data.error || "Yeniden aktifleştirme başarısız")
+      }
+    } catch (error) {
+      console.error("Yeniden aktifleştirme hatası:", error)
+    } finally {
+      setReactivating(null)
+    }
+  }
+
   const handleExtendSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!extendStudent) return
@@ -378,10 +405,7 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-ghost">
-      <AdminNav />
-
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-brand-dark">Öğrenciler</h2>
           <button
@@ -733,7 +757,7 @@ export default function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-brand-silver/5">
-                {students.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((student) => (
+                {students.map((student) => (
                   <tr key={student.id} className="hover:bg-brand-sand/30 transition-colors">
                     <td className="px-6 py-5 whitespace-nowrap">
                       <a href={`/admin/students/${student.id}`} className="text-sm font-bold text-brand-dark hover:text-brand-logo transition-colors cursor-pointer">{student.name}</a>
@@ -822,6 +846,15 @@ export default function StudentsPage() {
                       {student.status === "active" && (
                         <button onClick={() => openExtendForm(student)} className="text-green-600 hover:text-green-800 font-bold text-xs uppercase transition-colors">Ek Süre</button>
                       )}
+                      {(student.status === "dropped" || student.status === "refunded") && (
+                        <button
+                          onClick={() => handleReactivate(student.id, student.name)}
+                          disabled={reactivating === student.id}
+                          className="text-green-600 hover:text-green-800 font-bold text-xs uppercase transition-colors disabled:opacity-50"
+                        >
+                          {reactivating === student.id ? "Aktifleştiriliyor..." : "Yeniden Aktifleştir"}
+                        </button>
+                      )}
                       <button onClick={() => handleDelete(student.id)} className="text-red-400 hover:text-red-600 font-bold text-xs uppercase transition-colors">Sil</button>
                     </td>
                   </tr>
@@ -832,10 +865,10 @@ export default function StudentsPage() {
           {students.length === 0 && (
             <div className="text-center py-12 text-brand-silver font-medium italic">Öğrenci bulunamadı.</div>
           )}
-          {students.length > PAGE_SIZE && (
+          {totalCount > PAGE_SIZE && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-brand-silver/10 bg-brand-ghost">
               <p className="text-sm text-brand-muted">
-                {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, students.length)} / {students.length} öğrenci
+                {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, totalCount)} / {totalCount} öğrenci
               </p>
               <div className="flex gap-2">
                 <button
@@ -845,7 +878,7 @@ export default function StudentsPage() {
                 >
                   Önceki
                 </button>
-                {Array.from({ length: Math.ceil(students.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
+                {Array.from({ length: Math.ceil(totalCount / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
@@ -859,8 +892,8 @@ export default function StudentsPage() {
                   </button>
                 ))}
                 <button
-                  onClick={() => setPage(p => Math.min(Math.ceil(students.length / PAGE_SIZE), p + 1))}
-                  disabled={page >= Math.ceil(students.length / PAGE_SIZE)}
+                  onClick={() => setPage(p => Math.min(Math.ceil(totalCount / PAGE_SIZE), p + 1))}
+                  disabled={page >= Math.ceil(totalCount / PAGE_SIZE)}
                   className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   Sonraki
@@ -925,6 +958,5 @@ export default function StudentsPage() {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </>
   );}

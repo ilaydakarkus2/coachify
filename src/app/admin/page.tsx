@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import AdminNav from "@/components/AdminNav"
+
 interface Stats {
   totalStudents: number
   activeStudents: number
@@ -85,12 +85,9 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-ghost">
-      {/* Header - Lacivert Arka Plan */}
-      <AdminNav />
-
+    <>
       {stats && (
-        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <>
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Total Students */}
@@ -255,7 +252,7 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
-        </div>
+        </>
       )}
-    </div>
+    </>
   )}

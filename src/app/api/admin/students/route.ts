@@ -14,20 +14,21 @@ function validatePhone(field: string, value: string | undefined | null, required
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("[API] GET /api/admin/students - Fetching students...");
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const mentorId = searchParams.get("mentorId");
     const search = searchParams.get("search");
     const paymentStatus = searchParams.get("paymentStatus");
-    
+    const page = parseInt(searchParams.get("page") || "1");
+    const pageSize = parseInt(searchParams.get("pageSize") || "50");
+
     let searchCondition = {};
 
-if (search) {
-  const searchTRLower = search.toLocaleLowerCase('tr-TR');
+    if (search) {
+      const searchTRLower = search.toLocaleLowerCase('tr-TR');
       const searchTRUpper = search.toLocaleUpperCase('tr-TR');
 
-  searchCondition = {
+      searchCondition = {
         OR: [
           { name: { contains: search, mode: "insensitive" } },
           { name: { contains: searchTRLower, mode: "insensitive" } },
@@ -40,36 +41,43 @@ if (search) {
           { parentName: { contains: searchTRUpper, mode: "insensitive" } },
         ]
       };
-}
+    }
 
-    const students = await prisma.student.findMany({
-      include: {
+    const where = {
+      ...(status && { status }),
+      ...(paymentStatus && { paymentStatus }),
+      ...(mentorId && {
         studentAssignments: {
-          where: { endDate: null },
-          include: {
-            mentor: {
-              select: { id: true, name: true, email: true }
+          some: { mentorId, endDate: null }
+        }
+      }),
+      ...(search && searchCondition)
+    };
+
+    const [students, total] = await Promise.all([
+      prisma.student.findMany({
+        include: {
+          studentAssignments: {
+            where: { endDate: null },
+            include: {
+              mentor: {
+                select: { id: true, name: true, email: true }
+              }
             }
+          },
+          _count: {
+            select: { studentAssignments: true, payments: true }
           }
         },
-        _count: {
-          select: { studentAssignments: true, payments: true }
-        }
-      },
-      where: {
-        ...(status && { status }),
-        ...(paymentStatus && { paymentStatus }),
-        ...(mentorId && {
-          studentAssignments: {
-            some: { mentorId, endDate: null }
-          }
-        }),
-        ...(search && searchCondition)
-      },
-      orderBy: { createdAt: "desc" }
-    });
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.student.count({ where })
+    ]);
 
-    return NextResponse.json(students);
+    return NextResponse.json({ students, total, page, pageSize });
   } catch (error) {
     console.error("[API] Error fetching students:", error);
     return NextResponse.json({ error: "Failed to fetch students" }, { status: 500 });
@@ -78,11 +86,8 @@ if (search) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[API] POST /api/admin/students - Creating student...");
-    
-    // Fixed the line below where the import was stuck to the end of the line
-    const body = await request.json(); 
-    
+    const body = await request.json();
+
     const { name, email, phone, school, grade, startDate, endDate, mentorId,
             parentName, parentPhone, currentNetScore, targetNetScore,
             specialNote, membershipType, discountCode, stripeId,
@@ -118,7 +123,7 @@ export async function POST(request: NextRequest) {
     const startDt = new Date(startDate)
     let endDt: Date | null = endDate ? new Date(endDate) : null;
     if (!endDt && body.packageType === "1_aylik") {
-      endDt = new Date(startDt.getTime() + 4 * 7 * 24 * 60 * 60 * 1000); // 4 hafta
+      endDt = new Date(startDt.getTime() + 4 * 7 * 24 * 60 * 60 * 1000);
     }
     const student = await prisma.student.create({
       data: {
@@ -130,25 +135,17 @@ export async function POST(request: NextRequest) {
         startDate: startDt,
         endDate: endDt,
         purchaseDate: new Date(),
-        // Veli bilgileri
         parentName: parentName || null,
         parentPhone: parentPhone || null,
-        // Puan takibi
         currentNetScore: currentNetScore || null,
         targetNetScore: targetNetScore || null,
-        // Takip ve notlar
         specialNote: specialNote || null,
-        // Tally formu
         membershipType: membershipType || "new",
         packageType: body.packageType || null,
         discountCode: discountCode || null,
-        // Stripe
         stripeId: stripeId || null,
-        // İletişim tercihi
         contactPreference: contactPreference || null,
-        // Mesaj
         sendMessage: sendMessage || false,
-        // Hesaplamalar
         daySAG: new Date().getDate(),
         dayUBG: startDt.getDate(),
         monthUBG: startDt.toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
@@ -187,10 +184,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[API] Error creating student:", error);
     return NextResponse.json(
-      { 
-        error: "Failed to create student", 
-        details: error instanceof Error ? error.message : String(error) 
-      }, 
+      {
+        error: "Failed to create student",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

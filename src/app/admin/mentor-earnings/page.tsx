@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import AdminNav from "@/components/AdminNav"
+
 
 interface MentorEarning {
   id: string
@@ -41,6 +41,9 @@ export default function MentorEarningsPage() {
   const [earnings, setEarnings] = useState<MentorEarning[]>([])
   const [mentors, setMentors] = useState<Mentor[]>([])
   const [loading, setLoading] = useState(true)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [summary, setSummary] = useState({ totalPending: 0, totalPaid: 0, totalAll: 0 })
   const [filters, setFilters] = useState({
     status: "",
     mentorId: "",
@@ -57,16 +60,21 @@ export default function MentorEarningsPage() {
       if (filters.mentorId) params.append("mentorId", filters.mentorId)
       if (filters.cycleDateFrom) params.append("cycleDateFrom", filters.cycleDateFrom)
       if (filters.cycleDateTo) params.append("cycleDateTo", filters.cycleDateTo)
+      params.append("page", page.toString())
+      params.append("pageSize", PAGE_SIZE.toString())
 
       const res = await fetch(`/api/admin/mentor-earnings?${params.toString()}`)
       const data = await res.json()
-      setEarnings(data)
+      setEarnings(data.earnings || data)
+      setTotalCount(data.total ?? 0)
+      setTotalPages(Math.ceil((data.total ?? 0) / PAGE_SIZE))
+      if (data.summary) setSummary(data.summary)
     } catch (error) {
       console.error("Kazanclar getirilemedi:", error)
     } finally {
       setLoading(false)
     }
-  }, [filters])
+  }, [filters, page])
 
   const fetchMentors = useCallback(async () => {
     try {
@@ -89,15 +97,23 @@ export default function MentorEarningsPage() {
     }
   }, [fetchEarnings])
 
-  // Initial load: fetch data fast, then calculate in background
+  // Initial load: veriyi hemen goster, hesaplamayi arka planda yap
   useEffect(() => {
-    fetchEarnings().then(() => runCalculation())
+    fetchEarnings()
     fetchMentors()
+    // Hesaplamayi arka planda calistir, UI'i bloklama
+    fetch("/api/admin/mentor-earnings/calculate", { method: "POST" })
+      .then(res => { if (res.ok) fetchEarnings() })
+      .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Filter changes: just re-fetch (no recalculation)
+  // Filter changes: sayfayi sifirla ve tekrar cek
   useEffect(() => {
     setPage(1)
+  }, [filters])
+
+  // Page veya filter degisikliginde tekrar cek
+  useEffect(() => {
     fetchEarnings()
   }, [fetchEarnings])
 
@@ -126,6 +142,21 @@ export default function MentorEarningsPage() {
       if (res.ok) fetchEarnings()
     } catch (error) {
       console.error("Durum guncellenemedi:", error)
+    }
+  }
+
+  const handleUndo = async (id: string, currentStatus: string) => {
+    const statusLabel = currentStatus === "paid" ? "Ödendi" : "İptal"
+    if (!confirm(`Bu hakedisi "${statusLabel}" durumundan "Bekliyor" durumuna geri almak istediğinize emin misiniz?`)) return
+    try {
+      const res = await fetch(`/api/admin/mentor-earnings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "pending" })
+      })
+      if (res.ok) fetchEarnings()
+    } catch (error) {
+      console.error("Geri alinamadi:", error)
     }
   }
 
@@ -159,41 +190,34 @@ export default function MentorEarningsPage() {
     )
   }
 
-  const totalPending = earnings.filter(e => e.status === "pending").reduce((s, e) => s + e.amount, 0)
-  const totalPaid = earnings.filter(e => e.status === "paid").reduce((s, e) => s + e.amount, 0)
-  const totalAll = earnings.reduce((s, e) => s + e.amount, 0)
-
   if (loading) {
     return <div className="p-8">Yukleniyor...</div>
   }
 
   return (
-    <div className="min-h-screen bg-brand-ghost">
-      <AdminNav />
-
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-brand-dark">Mentor Kazanclari (Hakedis)</h2>
         </div>
 
-        {/* Ozet Kartlari */}
+        {/* Ozet Kartlari - backend'den gelen summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
             <div className="text-sm font-bold text-brand-muted mb-1">Toplam Hakedis</div>
             <div className="text-2xl font-black text-brand-dark">
-              {totalAll.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+              {summary.totalAll.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
             </div>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
             <div className="text-sm font-bold text-brand-muted mb-1">Bekleyen Odeme</div>
             <div className="text-2xl font-black text-yellow-600">
-              {totalPending.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+              {summary.totalPending.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
             </div>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
             <div className="text-sm font-bold text-brand-muted mb-1">Odenen</div>
             <div className="text-2xl font-black text-green-600">
-              {totalPaid.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+              {summary.totalPaid.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
             </div>
           </div>
         </div>
@@ -259,13 +283,13 @@ export default function MentorEarningsPage() {
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Hafta</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tutar</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Donem Tarihi</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tetikleyici</th>
+                  <th className="px-6 py-4 text-left text-xs font-brand-muted uppercase tracking-widest">Tetikleyici</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
                   <th className="px-6 py-4 text-right text-xs font-black text-brand-muted uppercase tracking-widest">Islemler</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-brand-silver/5">
-                {earnings.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((earning) => (
+                {earnings.map((earning) => (
                   <tr key={earning.id} className="hover:bg-brand-sand/30 transition-colors">
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="text-sm font-bold text-brand-logo">{earning.mentor.name}</div>
@@ -309,6 +333,14 @@ export default function MentorEarningsPage() {
                           Iptal
                         </button>
                       )}
+                      {(earning.status === "paid" || earning.status === "cancelled") && (
+                        <button
+                          onClick={() => handleUndo(earning.id, earning.status)}
+                          className="text-amber-600 hover:text-amber-800 font-bold text-xs uppercase transition-colors"
+                        >
+                          Geri Al
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -320,10 +352,10 @@ export default function MentorEarningsPage() {
               Hakedis kaydi bulunamadi.
             </div>
           )}
-          {earnings.length > PAGE_SIZE && (
+          {totalCount > PAGE_SIZE && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-brand-silver/10 bg-brand-ghost">
               <p className="text-sm text-brand-muted">
-                {((page - 1) * PAGE_SIZE) + 1}&ndash;{Math.min(page * PAGE_SIZE, earnings.length)} / {earnings.length} kayit
+                {((page - 1) * PAGE_SIZE) + 1}&ndash;{Math.min(page * PAGE_SIZE, totalCount)} / {totalCount} kayit
               </p>
               <div className="flex gap-2">
                 <button
@@ -333,7 +365,7 @@ export default function MentorEarningsPage() {
                 >
                   Onceki
                 </button>
-                {Array.from({ length: Math.ceil(earnings.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
@@ -347,8 +379,8 @@ export default function MentorEarningsPage() {
                   </button>
                 ))}
                 <button
-                  onClick={() => setPage(p => Math.min(Math.ceil(earnings.length / PAGE_SIZE), p + 1))}
-                  disabled={page >= Math.ceil(earnings.length / PAGE_SIZE)}
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
                   className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   Sonraki
@@ -357,7 +389,6 @@ export default function MentorEarningsPage() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </>
   )
 }
