@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const mentorId = searchParams.get("mentorId");
     const search = searchParams.get("search");
+    const paymentStatus = searchParams.get("paymentStatus");
     
     let searchCondition = {};
 
@@ -57,6 +58,7 @@ if (search) {
       },
       where: {
         ...(status && { status }),
+        ...(paymentStatus && { paymentStatus }),
         ...(mentorId && {
           studentAssignments: {
             some: { mentorId, endDate: null }

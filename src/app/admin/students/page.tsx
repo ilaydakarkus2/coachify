@@ -100,6 +100,7 @@ export default function StudentsPage() {
   const [editPhoneErrors, setEditPhoneErrors] = useState<{ phone?: string; parentPhone?: string }>({})
   const [filters, setFilters] = useState({
     status: "",
+    paymentStatus: "",
     search: "",
     mentorId: ""
   })
@@ -139,6 +140,7 @@ export default function StudentsPage() {
       if (filters.status) params.append("status", filters.status)
       if (filters.search) params.append("search", filters.search)
       if (filters.mentorId) params.append("mentorId", filters.mentorId)
+      if (filters.paymentStatus) params.append("paymentStatus", filters.paymentStatus)
 
       const res = await fetch(`/api/admin/students?${params.toString()}`)
       const data = await res.json()
@@ -392,7 +394,7 @@ export default function StudentsPage() {
 
         {/* Filtreler */}
         <div className="bg-brand-sand p-5 rounded-2xl shadow-sm border border-brand-silver/20 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-bold text-brand-muted mb-1.5">Durum</label>
               <select
@@ -404,6 +406,20 @@ export default function StudentsPage() {
                 <option value="active">Aktif</option>
                 <option value="dropped">Bırakan</option>
                 <option value="refunded">İade</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-brand-muted mb-1.5">Ödeme Durumu</label>
+              <select
+                className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
+                value={filters.paymentStatus}
+                onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value })}
+              >
+                <option value="">Tümü</option>
+                <option value="paid">Ödendi</option>
+                <option value="pending">Bekliyor</option>
+                <option value="late">Gecikti</option>
+                <option value="very_late">Çok Gecikti</option>
               </select>
             </div>
             <div className="relative">
@@ -613,7 +629,8 @@ export default function StudentsPage() {
                         <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.paymentStatus} onChange={(e) => setEditFormData({ ...editFormData, paymentStatus: e.target.value })}>
                           <option value="pending">Bekliyor</option>
                           <option value="paid">Ödendi</option>
-                          <option value="refunded">İade Edildi</option>
+                          <option value="late">Gecikti</option>
+                          <option value="very_late">Çok Gecikti</option>
                         </select>
                     </div>
                     <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
@@ -755,9 +772,14 @@ export default function StudentsPage() {
                     <td className="px-6 py-5 whitespace-nowrap">
                       <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
                         student.paymentStatus === "paid" ? "bg-green-100 text-green-700" :
-                        student.paymentStatus === "refunded" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
+                        student.paymentStatus === "late" ? "bg-orange-100 text-orange-700" :
+                        student.paymentStatus === "very_late" ? "bg-red-100 text-red-700" :
+                        "bg-yellow-100 text-yellow-700"
                       }`}>
-                        {student.paymentStatus === "paid" ? "Ödendi" : student.paymentStatus === "refunded" ? "İade" : "Bekliyor"}
+                        {student.paymentStatus === "paid" ? "Ödendi" :
+                         student.paymentStatus === "late" ? "Gecikti" :
+                         student.paymentStatus === "very_late" ? "Çok Gecikti" :
+                         "Bekliyor"}
                       </span>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-[11px]">
