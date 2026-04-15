@@ -26,7 +26,10 @@ export function calculateMentorEarning(
   assignmentEnd: Date,
   weeklyRate: number = DEFAULT_WEEKLY_RATE
 ): { completedWeeks: number; amount: number } {
-  const diffMs = assignmentEnd.getTime() - assignmentStart.getTime()
+  // Saat ve timezone bileşenini yoksay — UTC gün bazlı hesaplama
+  const startDay = new Date(Date.UTC(assignmentStart.getUTCFullYear(), assignmentStart.getUTCMonth(), assignmentStart.getUTCDate()))
+  const endDay = new Date(Date.UTC(assignmentEnd.getUTCFullYear(), assignmentEnd.getUTCMonth(), assignmentEnd.getUTCDate()))
+  const diffMs = endDay.getTime() - startDay.getTime()
 
   if (diffMs <= 0) return { completedWeeks: 0, amount: 0 }
 
@@ -301,14 +304,143 @@ export async function calculatePendingEarnings(adminUserId: string): Promise<num
 
       if (incrementWeeks <= 0) continue
 
-      await prisma.mentorEarning.create({
-        data: {
+      await prisma.mentorEarning.upsert({
+        where: {
+          studentId_mentorId_cycleDate: {
+            studentId: assignment.studentId,
+            mentorId: assignment.mentorId,
+            cycleDate
+          }
+        },
+        create: {
           mentorId: assignment.mentorId,
           studentId: assignment.studentId,
           assignmentId: assignment.id,
           completedWeeks: incrementWeeks,
           amount: incrementWeeks * weeklyRate,
           cycleDate,
+          status: "pending",
+          triggerReason: "periodic_calc",
+          assignmentStart: assignment.startDate,
+          assignmentEnd: effectiveEnd,
+          createdBy: adminUserId
+        },
+        update: {
+          assignmentId: assignment.id,
+          completedWeeks: incrementWeeks,
+          amount: incrementWeeks * weeklyRate,
+          status: "pending",
+          triggerReason: "periodic_calc",
+          assignmentStart: assignment.startDate,
+          assignmentEnd: effectiveEnd,
+          createdBy: adminUserId
+        }
+      })
+      created++
+    }
+  }
+
+  return created
+}
+
+/**
+ * Belirli bir mentor icin periyodik hakedis hesaplar.
+ * calculatePendingEarnings ile ayni mantik ama sadece bir mentorun atamalarini isler.
+ * Mentor panelini actiginda otomatik hesaplama icin kullanilir.
+ */
+export async function calculatePendingEarningsForMentor(mentorId: string, adminUserId: string): Promise<number> {
+  const weeklyRate = await getWeeklyRate()
+  const now = new Date()
+  // 3 ay sonrasina kadar olan donemleri de hesapla (beklenen odemeler icin)
+  const futureDate = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate())
+
+  const assignments = await prisma.studentAssignment.findMany({
+    where: { mentorId },
+    include: {
+      student: {
+        select: { id: true, name: true, startDate: true, endDate: true, status: true, purchaseDate: true }
+      }
+    }
+  })
+
+  let created = 0
+
+  for (const assignment of assignments) {
+    const sag = assignment.student.purchaseDate ?? assignment.student.startDate
+    const studentEnd = assignment.student.endDate ? new Date(assignment.student.endDate) : null
+    // Cycle date'leri futureDate'e kadar üret (studentEndDate ile kesme!
+    // Çünkü cycle date = ödeme tarihidir, mentorun çalıştığı dönem sonrasına denk gelebilir)
+    const allCycleDates = getAllCycleDates(sag, futureDate)
+    const cycleDates = allCycleDates.filter(d => d > assignment.startDate)
+
+    if (cycleDates.length === 0) continue
+
+    const existingRecords = await prisma.mentorEarning.findMany({
+      where: {
+        assignmentId: assignment.id,
+        status: { not: "cancelled" }
+      },
+      orderBy: { cycleDate: "asc" }
+    })
+
+    // Atama bitis tarihi: assignment.endDate > student.endDate > null
+    const assignmentEndDate = assignment.endDate
+      ? new Date(assignment.endDate)
+      : studentEnd
+
+    let runningTotal = 0
+
+    for (const cycleDate of cycleDates) {
+      const exists = existingRecords.some(r => isSameDay(r.cycleDate, cycleDate))
+      if (exists) {
+        const effectiveEnd = assignmentEndDate
+          ? (cycleDate < assignmentEndDate ? cycleDate : assignmentEndDate)
+          : cycleDate
+        const { completedWeeks: cumulative } = calculateMentorEarning(
+          assignment.startDate, effectiveEnd, weeklyRate
+        )
+        runningTotal = cumulative
+        continue
+      }
+
+      const effectiveEnd = assignmentEndDate
+        ? (cycleDate < assignmentEndDate ? cycleDate : assignmentEndDate)
+        : cycleDate
+
+      const { completedWeeks: cumulativeWeeks } = calculateMentorEarning(
+        assignment.startDate, effectiveEnd, weeklyRate
+      )
+
+      const incrementWeeks = cumulativeWeeks - runningTotal
+      runningTotal = cumulativeWeeks
+
+      if (incrementWeeks <= 0) continue
+
+      await prisma.mentorEarning.upsert({
+        where: {
+          studentId_mentorId_cycleDate: {
+            studentId: assignment.studentId,
+            mentorId: assignment.mentorId,
+            cycleDate
+          }
+        },
+        create: {
+          mentorId: assignment.mentorId,
+          studentId: assignment.studentId,
+          assignmentId: assignment.id,
+          completedWeeks: incrementWeeks,
+          amount: incrementWeeks * weeklyRate,
+          cycleDate,
+          status: "pending",
+          triggerReason: "periodic_calc",
+          assignmentStart: assignment.startDate,
+          assignmentEnd: effectiveEnd,
+          createdBy: adminUserId
+        },
+        update: {
+          assignmentId: assignment.id,
+          completedWeeks: incrementWeeks,
+          amount: incrementWeeks * weeklyRate,
           status: "pending",
           triggerReason: "periodic_calc",
           assignmentStart: assignment.startDate,

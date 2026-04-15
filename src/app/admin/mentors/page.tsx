@@ -36,7 +36,13 @@ export default function MentorsPage() {
     specialty: ""
   })
   const [page, setPage] = useState(1)
+  const [mentorSearch, setMentorSearch] = useState("")
+  const [sortAsc, setSortAsc] = useState(true)
   const PAGE_SIZE = 20
+
+  const filteredMentors = mentors
+    .filter(m => !mentorSearch || m.name.toLowerCase().includes(mentorSearch.toLowerCase()))
+    .sort((a, b) => sortAsc ? a.name.localeCompare(b.name, 'tr-TR') : b.name.localeCompare(a.name, 'tr-TR'))
 
   useEffect(() => {
     fetchMentors()
@@ -209,6 +215,22 @@ export default function MentorsPage() {
 
         {/* Mentorlar Tablosu */}
         <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
+          {/* Arama ve Sıralama */}
+          <div className="px-6 py-4 border-b border-brand-silver/10 flex items-center gap-4">
+            <input
+              type="text"
+              placeholder="Mentor ara..."
+              value={mentorSearch}
+              onChange={(e) => { setMentorSearch(e.target.value); setPage(1) }}
+              className="flex-1 px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none text-sm"
+            />
+            <button
+              onClick={() => setSortAsc(!sortAsc)}
+              className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all whitespace-nowrap"
+            >
+              {sortAsc ? "A → Z" : "Z → A"}
+            </button>
+          </div>
           <table className="min-w-full divide-y divide-brand-silver/10">
             <thead className="bg-brand-ghost">
               <tr>
@@ -220,7 +242,7 @@ export default function MentorsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-brand-silver/5">
-              {mentors.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((mentor) => (
+              {filteredMentors.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((mentor) => (
                 <tr key={mentor.id} className="hover:bg-brand-sand/30 transition-colors">
                   <td className="px-6 py-5 whitespace-nowrap">
                     <div className="text-sm font-bold text-brand-dark">{mentor.name}</div>
@@ -262,15 +284,15 @@ export default function MentorsPage() {
               ))}
             </tbody>
           </table>
-          {mentors.length === 0 && (
+          {filteredMentors.length === 0 && (
             <div className="text-center py-12 text-brand-silver font-medium italic">
-              Henuz kayitli mentor bulunmuyor.
+              {mentorSearch ? "Aramanızla eşleşen mentor bulunamadı." : "Henuz kayitli mentor bulunmuyor."}
             </div>
           )}
-          {mentors.length > PAGE_SIZE && (
+          {filteredMentors.length > PAGE_SIZE && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-brand-silver/10 bg-brand-ghost">
               <p className="text-sm text-brand-muted">
-                {((page - 1) * PAGE_SIZE) + 1}&ndash;{Math.min(page * PAGE_SIZE, mentors.length)} / {mentors.length} mentor
+                {((page - 1) * PAGE_SIZE) + 1}&ndash;{Math.min(page * PAGE_SIZE, filteredMentors.length)} / {filteredMentors.length} mentor
               </p>
               <div className="flex gap-2">
                 <button
@@ -280,7 +302,7 @@ export default function MentorsPage() {
                 >
                   Onceki
                 </button>
-                {Array.from({ length: Math.ceil(mentors.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
+                {Array.from({ length: Math.ceil(filteredMentors.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
@@ -294,8 +316,8 @@ export default function MentorsPage() {
                   </button>
                 ))}
                 <button
-                  onClick={() => setPage(p => Math.min(Math.ceil(mentors.length / PAGE_SIZE), p + 1))}
-                  disabled={page >= Math.ceil(mentors.length / PAGE_SIZE)}
+                  onClick={() => setPage(p => Math.min(Math.ceil(filteredMentors.length / PAGE_SIZE), p + 1))}
+                  disabled={page >= Math.ceil(filteredMentors.length / PAGE_SIZE)}
                   className="px-4 py-2 text-sm font-bold rounded-lg border border-brand-silver/30 bg-white text-brand-dark hover:bg-brand-sand transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   Sonraki

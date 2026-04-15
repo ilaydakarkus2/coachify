@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { prisma, getAdminUserId } from "@/lib/prisma"
+import { calculatePendingEarningsForMentor } from "@/lib/mentor-earnings"
 
 export async function GET() {
   try {
@@ -15,6 +16,16 @@ export async function GET() {
     })
     if (!mentor) {
       return NextResponse.json({ error: "Mentor profili bulunamadı" }, { status: 404 })
+    }
+
+    // Otomatik hakedis hesaplama — mentor panelini actiginda guncel veriler gormesi icin
+    try {
+      const adminUserId = await getAdminUserId()
+      const calcResult = await calculatePendingEarningsForMentor(mentor.id, adminUserId)
+      console.log(`[MENTOR/EARNINGS] Auto-calc created ${calcResult} records for mentor ${mentor.id}`)
+    } catch (calcError) {
+      console.error("[MENTOR/EARNINGS] Auto-calculation error:", calcError)
+      // Hesaplama hatasi olsa bile mevcut kayitlari gostermeye devam et
     }
 
     const earnings = await prisma.mentorEarning.findMany({

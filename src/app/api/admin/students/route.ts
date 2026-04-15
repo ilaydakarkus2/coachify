@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, getAdminUserId } from "@/lib/prisma";
 
+function validatePhone(field: string, value: string | undefined | null, required: boolean): string | null {
+  if (!value || value.trim() === "") {
+    if (required) return `${field} zorunludur.`;
+    return null;
+  }
+  if (!/^\+90\d{10}$/.test(value.trim())) {
+    return `${field} +90 ile başlamalı ve 10 rakam içermelidir (örn: +905551234567).`;
+  }
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log("[API] GET /api/admin/students - Fetching students...");
@@ -21,6 +32,11 @@ if (search) {
           { name: { contains: searchTRLower, mode: "insensitive" } },
           { name: { contains: searchTRUpper, mode: "insensitive" } },
           { email: { contains: search, mode: "insensitive" } },
+          { phone: { contains: search } },
+          { parentPhone: { contains: search } },
+          { parentName: { contains: search, mode: "insensitive" } },
+          { parentName: { contains: searchTRLower, mode: "insensitive" } },
+          { parentName: { contains: searchTRUpper, mode: "insensitive" } },
         ]
       };
 }
@@ -77,6 +93,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const phoneError = validatePhone("Telefon numarası", phone, true);
+    const parentPhoneError = validatePhone("Veli telefonu", parentPhone, false);
+    if (phoneError || parentPhoneError) {
+      return NextResponse.json(
+        { error: phoneError || parentPhoneError },
+        { status: 400 }
+      );
+    }
+
     const existingStudent = await prisma.student.findUnique({
       where: { email }
     });
@@ -89,6 +114,10 @@ export async function POST(request: NextRequest) {
     }
 
     const startDt = new Date(startDate)
+    let endDt: Date | null = endDate ? new Date(endDate) : null;
+    if (!endDt && body.packageType === "1_aylik") {
+      endDt = new Date(startDt.getTime() + 4 * 7 * 24 * 60 * 60 * 1000); // 4 hafta
+    }
     const student = await prisma.student.create({
       data: {
         name,
@@ -97,7 +126,7 @@ export async function POST(request: NextRequest) {
         school,
         grade,
         startDate: startDt,
-        endDate: endDate ? new Date(endDate) : null,
+        endDate: endDt,
         purchaseDate: new Date(),
         // Veli bilgileri
         parentName: parentName || null,

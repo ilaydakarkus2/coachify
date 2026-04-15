@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma, getAdminUserId } from "@/lib/prisma"
 import { finalizeMentorEarningForAssignment } from "@/lib/mentor-earnings"
 
+function validatePhone(field: string, value: string | undefined | null, required: boolean): string | null {
+  if (!value || value.trim() === "") {
+    if (required) return `${field} zorunludur.`;
+    return null;
+  }
+  if (!/^\+90\d{10}$/.test(value.trim())) {
+    return `${field} +90 ile başlamalı ve 10 rakam içermelidir (örn: +905551234567).`;
+  }
+  return null;
+}
+
 // Tip tanımını buraya ekleyelim (Next.js 15 standartı)
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -83,6 +94,16 @@ export async function PATCH(
             specialNote, dropReason, refundStatus, mentorChangeNote,
             droppedMonth, searchDay, searchMonth, contactPreference,
             sendMessage, membershipType, packageType, discountCode, stripeId } = body
+
+    // Telefon dogrulama
+    if (phone) {
+      const phoneError = validatePhone("Telefon numarası", phone, true);
+      if (phoneError) return NextResponse.json({ error: phoneError }, { status: 400 });
+    }
+    if (parentPhone !== undefined && parentPhone !== null && parentPhone !== "") {
+      const parentPhoneError = validatePhone("Veli telefonu", parentPhone, false);
+      if (parentPhoneError) return NextResponse.json({ error: parentPhoneError }, { status: 400 });
+    }
 
     // Get current student for comparison
     const currentStudent = await prisma.student.findUnique({

@@ -95,18 +95,31 @@ export default function StudentsPage() {
     mentorId: "",
   })
   const [editMentorSaving, setEditMentorSaving] = useState(false)
+  const [mentorChangeDate, setMentorChangeDate] = useState(new Date().toISOString().split("T")[0])
+  const [phoneErrors, setPhoneErrors] = useState<{ phone?: string; parentPhone?: string }>({})
+  const [editPhoneErrors, setEditPhoneErrors] = useState<{ phone?: string; parentPhone?: string }>({})
   const [filters, setFilters] = useState({
     status: "",
     search: "",
     mentorId: ""
   })
   const [mentors, setMentors] = useState<Array<{ id: string; name: string }>>([])
+  const [mentorSearch, setMentorSearch] = useState("")
+  const [mentorDropdownOpen, setMentorDropdownOpen] = useState(false)
   const [showExtendForm, setShowExtendForm] = useState(false)
   const [extendStudent, setExtendStudent] = useState<Student | null>(null)
   const [extendData, setExtendData] = useState({ weeks: 1, reason: "" })
   const [extendLoading, setExtendLoading] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 20
+
+  const validatePhoneFormat = (value: string): string | null => {
+    if (!value || value.trim() === "") return null
+    if (!/^\+90\d{10}$/.test(value.trim())) {
+      return "+90 ile başlamalı, 10 rakam (örn: +905551234567)"
+    }
+    return null
+  }
 
   useEffect(() => {
     setPage(1)
@@ -116,7 +129,7 @@ export default function StudentsPage() {
   useEffect(() => {
     fetch("/api/admin/mentors")
       .then(res => res.json())
-      .then(data => { if (Array.isArray(data)) setMentors(data) })
+      .then(data => { if (Array.isArray(data)) setMentors(data.sort((a: any, b: any) => a.name.localeCompare(b.name, 'tr-TR'))) })
       .catch(() => {})
   }, [])
 
@@ -139,6 +152,15 @@ export default function StudentsPage() {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Telefon dogrulama
+    const phoneErr = validatePhoneFormat(formData.phone)
+    const parentPhoneErr = validatePhoneFormat(formData.parentPhone)
+    if (phoneErr || parentPhoneErr) {
+      setPhoneErrors({ phone: phoneErr || undefined, parentPhone: parentPhoneErr || undefined })
+      return
+    }
+    setPhoneErrors({})
 
     console.log("[Frontend] Creating student with data:", formData)
 
@@ -192,6 +214,15 @@ export default function StudentsPage() {
     e.preventDefault()
     if (!selectedStudent) return
 
+    // Telefon dogrulama
+    const phoneErr = validatePhoneFormat(editFormData.phone)
+    const parentPhoneErr = validatePhoneFormat(editFormData.parentPhone)
+    if (phoneErr || parentPhoneErr) {
+      setEditPhoneErrors({ phone: phoneErr || undefined, parentPhone: parentPhoneErr || undefined })
+      return
+    }
+    setEditPhoneErrors({})
+
     console.log("[Frontend] Updating student:", selectedStudent.id)
     console.log("[Frontend] Edit form data:", editFormData)
 
@@ -223,7 +254,7 @@ export default function StudentsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             newMentorId,
-            startDate: new Date().toISOString().split("T")[0],
+            startDate: mentorChangeDate || new Date().toISOString().split("T")[0],
             notes: selectedStudent.mentorChangeNote || ""
           })
         })
@@ -375,24 +406,55 @@ export default function StudentsPage() {
                 <option value="refunded">İade</option>
               </select>
             </div>
-            <div>
+            <div className="relative">
               <label className="block text-sm font-bold text-brand-muted mb-1.5">Mentor</label>
-              <select
+              <input
+                type="text"
+                placeholder={filters.mentorId ? mentors.find(m => m.id === filters.mentorId)?.name || "Mentor ara..." : "Tüm Mentorlar"}
                 className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                value={filters.mentorId}
-                onChange={(e) => setFilters({ ...filters, mentorId: e.target.value })}
-              >
-                <option value="">Tüm Mentorlar</option>
-                {mentors.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+                value={mentorSearch}
+                onChange={(e) => { setMentorSearch(e.target.value); setMentorDropdownOpen(true) }}
+                onFocus={() => setMentorDropdownOpen(true)}
+                onBlur={() => setTimeout(() => setMentorDropdownOpen(false), 150)}
+              />
+              {filters.mentorId && !mentorSearch && (
+                <button
+                  type="button"
+                  className="absolute right-8 top-[34px] text-brand-muted hover:text-brand-dark"
+                  onClick={() => { setFilters({ ...filters, mentorId: "" }); setMentorSearch("") }}
+                >
+                  ×
+                </button>
+              )}
+              {mentorDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-brand-silver rounded-lg shadow-lg max-h-60 overflow-auto">
+                  <button
+                    type="button"
+                    className={`w-full text-left px-3 py-2 hover:bg-brand-sand/50 text-sm ${!filters.mentorId ? "bg-brand-primary/10 font-bold" : ""}`}
+                    onMouseDown={() => { setFilters({ ...filters, mentorId: "" }); setMentorSearch(""); setMentorDropdownOpen(false) }}
+                  >
+                    Tüm Mentorlar
+                  </button>
+                  {mentors
+                    .filter(m => !mentorSearch || m.name.toLowerCase().includes(mentorSearch.toLowerCase()))
+                    .map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className={`w-full text-left px-3 py-2 hover:bg-brand-sand/50 text-sm ${filters.mentorId === m.id ? "bg-brand-primary/10 font-bold" : ""}`}
+                        onMouseDown={() => { setFilters({ ...filters, mentorId: m.id }); setMentorSearch(""); setMentorDropdownOpen(false) }}
+                      >
+                        {m.name}
+                      </button>
+                    ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-bold text-brand-muted mb-1.5">Arama</label>
               <input
                 type="text"
-                placeholder="İsim veya e-posta ile ara..."
+                placeholder="İsim, e-posta, telefon veya veli bilgileri ile ara..."
                 className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
@@ -417,7 +479,8 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-brand-muted mb-1">Telefon</label>
-                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                  <input type="text" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none ${phoneErrors.phone ? 'border-red-400' : 'border-brand-silver'}`} value={formData.phone} onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); if (phoneErrors.phone) setPhoneErrors({ ...phoneErrors, phone: undefined }) }} onBlur={() => { const err = validatePhoneFormat(formData.phone); if (err) setPhoneErrors({ ...phoneErrors, phone: err }) }} />
+                  {phoneErrors.phone && <p className="text-xs text-red-500 mt-1">{phoneErrors.phone}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-brand-muted mb-1">Okul</label>
@@ -456,7 +519,8 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-brand-muted mb-1">Veli Telefonu</label>
-                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentPhone} onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })} />
+                  <input type="text" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none ${phoneErrors.parentPhone ? 'border-red-400' : 'border-brand-silver'}`} value={formData.parentPhone} onChange={(e) => { setFormData({ ...formData, parentPhone: e.target.value }); if (phoneErrors.parentPhone) setPhoneErrors({ ...phoneErrors, parentPhone: undefined }) }} onBlur={() => { const err = validatePhoneFormat(formData.parentPhone); if (err) setPhoneErrors({ ...phoneErrors, parentPhone: err }) }} />
+                  {phoneErrors.parentPhone && <p className="text-xs text-red-500 mt-1">{phoneErrors.parentPhone}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-brand-muted mb-1">İletişim Tercihi</label>
@@ -502,7 +566,8 @@ export default function StudentsPage() {
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">Telefon</label>
-                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.phone} onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })} />
+                        <input type="text" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none ${editPhoneErrors.phone ? 'border-red-400' : 'border-brand-silver'}`} value={editFormData.phone} onChange={(e) => { setEditFormData({ ...editFormData, phone: e.target.value }); if (editPhoneErrors.phone) setEditPhoneErrors({ ...editPhoneErrors, phone: undefined }) }} onBlur={() => { const err = validatePhoneFormat(editFormData.phone); if (err) setEditPhoneErrors({ ...editPhoneErrors, phone: err }) }} />
+                        {editPhoneErrors.phone && <p className="text-xs text-red-500 mt-1">{editPhoneErrors.phone}</p>}
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf</label>
@@ -517,7 +582,14 @@ export default function StudentsPage() {
                           ))}
                         </select>
                         {editFormData.mentorId && editFormData.mentorId !== (selectedStudent?.studentAssignments?.[0]?.mentor?.id || "") && (
-                          <p className="text-xs text-amber-600 mt-1 font-medium">Dikkat: Mentor değişikliği eski mentorun hakedişini sonlandırır.</p>
+                          <>
+                            <p className="text-xs text-amber-600 mt-1 font-medium">Dikkat: Mentor değişikliği eski mentorun hakedişini sonlandırır.</p>
+                            <div className="mt-2">
+                              <label className="block text-xs font-bold text-brand-muted mb-1">Değişiklik Tarihi</label>
+                              <input type="date" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none text-sm" value={mentorChangeDate} onChange={(e) => setMentorChangeDate(e.target.value)} />
+                              <p className="text-[10px] text-brand-muted mt-0.5">Bu tarih hakediş hesaplamasını etkiler.</p>
+                            </div>
+                          </>
                         )}
                     </div>
                     <div>
@@ -553,7 +625,8 @@ export default function StudentsPage() {
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">Veli Telefonu</label>
-                        <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={editFormData.parentPhone} onChange={(e) => setEditFormData({ ...editFormData, parentPhone: e.target.value })} />
+                        <input type="text" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none ${editPhoneErrors.parentPhone ? 'border-red-400' : 'border-brand-silver'}`} value={editFormData.parentPhone} onChange={(e) => { setEditFormData({ ...editFormData, parentPhone: e.target.value }); if (editPhoneErrors.parentPhone) setEditPhoneErrors({ ...editPhoneErrors, parentPhone: undefined }) }} onBlur={() => { const err = validatePhoneFormat(editFormData.parentPhone); if (err) setEditPhoneErrors({ ...editPhoneErrors, parentPhone: err }) }} />
+                        {editPhoneErrors.parentPhone && <p className="text-xs text-red-500 mt-1">{editPhoneErrors.parentPhone}</p>}
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-brand-muted mb-1">İletişim Tercihi</label>
@@ -646,7 +719,7 @@ export default function StudentsPage() {
                 {students.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((student) => (
                   <tr key={student.id} className="hover:bg-brand-sand/30 transition-colors">
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="text-sm font-bold text-brand-dark">{student.name}</div>
+                      <a href={`/admin/students/${student.id}`} className="text-sm font-bold text-brand-dark hover:text-brand-logo transition-colors cursor-pointer">{student.name}</a>
                       <div className="text-xs text-brand-muted">{student.phone}</div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">{student.email}</td>

@@ -207,6 +207,25 @@ export default function MentorPage() {
               {earningSummary.totalPending.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
             </div>
           </div>
+          <div className="col-span-2 md:col-span-4 bg-brand-sand/40 rounded-2xl p-5 border border-brand-silver/20">
+            <div className="text-sm font-bold text-brand-muted mb-1">Beklenen Toplam Ödeme (Yaklaşan Dönemler)</div>
+            <div className="text-2xl font-black text-brand-logo">
+              {(() => {
+                const now = new Date()
+                const upcoming = earnings.filter(e => e.status === "pending" && new Date(e.cycleDate) > now)
+                const total = upcoming.reduce((sum, e) => sum + e.amount, 0)
+                const dates = [...new Set(upcoming.map(e => new Date(e.cycleDate).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })))]
+                return (
+                  <div className="flex flex-col md:flex-row md:items-center gap-2">
+                    <span>{total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+                    {dates.length > 0 && (
+                      <span className="text-xs font-bold text-brand-muted">— {dates.join(", ")} tarihlerinde</span>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -353,53 +372,87 @@ export default function MentorPage() {
         {/* HAKEDİŞ TAB */}
         {tab === "earnings" && (
           <div>
-            <h2 className="text-xl font-bold text-brand-dark mb-4">Hakediş Detayları</h2>
-            <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-brand-silver/10">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-brand-silver/10">
-                  <thead className="bg-brand-ghost">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
-                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul</th>
-                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Hafta</th>
-                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Tutar</th>
-                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Dönem</th>
-                      <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-brand-silver/5">
-                    {earnings.map((earning) => (
-                      <tr key={earning.id} className="hover:bg-brand-sand/30 transition-colors">
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <div className="text-sm font-bold text-brand-dark">{earning.student.name}</div>
-                          <div className="text-xs text-brand-muted">{earning.student.grade}</div>
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">
-                          {earning.student.school}
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted font-medium">
-                          {earning.completedWeeks} Hafta
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-brand-dark">
-                          {earning.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">
-                          {new Date(earning.cycleDate).toLocaleDateString("tr-TR")}
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          {statusBadge(earning.status)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {earnings.length === 0 && (
-                <div className="text-center py-12 text-brand-silver font-medium italic">
-                  Henüz hakediş kaydınız bulunmuyor.
+            {(() => {
+              const now = new Date()
+              const upcomingEarnings = earnings.filter(e => new Date(e.cycleDate) > now)
+              const pastEarnings = earnings.filter(e => new Date(e.cycleDate) <= now)
+
+              const renderGrouped = (items: Earning[], title: string, emptyMsg: string, isUpcoming: boolean) => {
+                if (items.length === 0) return null
+                const grouped = items.reduce((acc: Record<string, { cycleDate: string; items: Earning[]; total: number }>, e) => {
+                  const key = new Date(e.cycleDate).toLocaleDateString("tr-TR")
+                  if (!acc[key]) acc[key] = { cycleDate: e.cycleDate, items: [], total: 0 }
+                  acc[key].items.push(e)
+                  acc[key].total += e.amount
+                  return acc
+                }, {} as Record<string, { cycleDate: string; items: Earning[]; total: number }>)
+                const sortedGroups = Object.values(grouped).sort(
+                  (a, b) => new Date(a.cycleDate).getTime() - new Date(b.cycleDate).getTime()
+                )
+                const grandTotal = sortedGroups.reduce((s, g) => s + g.total, 0)
+
+                return (
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-black text-brand-dark">{title}</h2>
+                      <span className={`text-xl font-black ${isUpcoming ? "text-brand-logo" : "text-yellow-600"}`}>
+                        {grandTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+                      </span>
+                    </div>
+                    <div className="space-y-4">
+                      {sortedGroups.map((group) => (
+                        <div key={group.cycleDate} className={`bg-white shadow-xl rounded-2xl border overflow-hidden ${isUpcoming ? "border-brand-logo/30" : "border-brand-silver/10"}`}>
+                          <div className={`${isUpcoming ? "bg-brand-primary/5" : "bg-brand-ghost"} px-6 py-4 flex justify-between items-center`}>
+                            <div className="flex items-center gap-3">
+                              {isUpcoming && (
+                                <span className="px-2 py-0.5 text-[9px] font-black uppercase rounded bg-brand-logo text-white">Ödeme Tarihi</span>
+                              )}
+                              <span className="text-sm font-black text-brand-dark">
+                                {new Date(group.cycleDate).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+                              </span>
+                              <span className="text-xs text-brand-muted">({group.items.length} öğrenci)</span>
+                            </div>
+                            <span className={`text-lg font-black ${isUpcoming ? "text-brand-logo" : "text-brand-dark"}`}>
+                              {group.total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+                            </span>
+                          </div>
+                          <div className="divide-y divide-brand-silver/5">
+                            {group.items.map((e) => (
+                              <div key={e.id} className="px-6 py-4 flex items-center justify-between hover:bg-brand-sand/20 transition-colors">
+                                <div>
+                                  <div className="text-sm font-bold text-brand-dark">{e.student.name}</div>
+                                  <div className="text-xs text-brand-muted">{e.student.school} • {e.student.grade}</div>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                  <span className="text-xs text-brand-muted font-medium">{e.completedWeeks} Hafta</span>
+                                  <span className="text-sm font-bold text-brand-dark">{e.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+                                  {statusBadge(e.status)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
+
+              if (earnings.length === 0) {
+                return (
+                  <div className="bg-white shadow-xl rounded-2xl border border-brand-silver/10 text-center py-12 text-brand-silver font-medium italic">
+                    Henüz hakediş kaydınız bulunmuyor.
+                  </div>
+                )
+              }
+
+              return (
+                <div>
+                  {renderGrouped(upcomingEarnings, "Beklenen Ödemeler", "", true)}
+                  {renderGrouped(pastEarnings, "Geçmiş Hakedişler", "", false)}
                 </div>
-              )}
-            </div>
+              )
+            })()}
           </div>
         )}
       </div>
