@@ -96,9 +96,9 @@ export default function AssignmentsPage() {
 
   const fetchStudents = async () => {
     try {
-      const res = await fetch("/api/admin/students")
+      const res = await fetch("/api/admin/students?pageSize=1000")
       const data = await res.json()
-      setStudents(data)
+      setStudents(data.students || data)
     } catch (error) {
       console.error("Failed to fetch students:", error)
     }
