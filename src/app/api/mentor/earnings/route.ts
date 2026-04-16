@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma, getAdminUserId } from "@/lib/prisma"
-import { calculatePendingEarningsForMentor } from "@/lib/mentor-earnings"
+import { calculatePendingEarningsForMentor, getUsdRate } from "@/lib/mentor-earnings"
 
 export async function GET() {
   try {
@@ -49,9 +49,12 @@ export async function GET() {
       .filter(e => e.status === "pending")
       .reduce((sum, e) => sum + e.amount, 0)
 
+    const usdRate = await getUsdRate()
+
     return NextResponse.json({
       mentor: { name: mentor.name, specialty: mentor.specialty, email: mentor.email },
       earnings,
+      usdRate,
       summary: {
         totalEarned,
         totalPending,

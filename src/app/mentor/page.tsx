@@ -73,6 +73,9 @@ export default function MentorPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [tab, setTab] = useState<"students" | "earnings">("students")
+  const [usdRate, setUsdRate] = useState(0)
+
+  const toUsd = (tl: number) => usdRate > 0 ? (tl / usdRate).toFixed(2) : null
 
   useEffect(() => {
     fetchData()
@@ -103,6 +106,7 @@ export default function MentorPage() {
       if (earningsRes.ok) {
         setEarnings(earningsData.earnings)
         setEarningSummary(earningsData.summary)
+        setUsdRate(earningsData.usdRate || 0)
       }
 
       if (!studentsRes.ok && !earningsRes.ok) {
@@ -200,12 +204,18 @@ export default function MentorPage() {
             <div className="text-2xl font-black text-green-600">
               {earningSummary.totalEarned.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
             </div>
+            {toUsd(earningSummary.totalEarned) && (
+              <div className="text-sm text-brand-muted mt-1">${toUsd(earningSummary.totalEarned)}</div>
+            )}
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
             <div className="text-sm font-bold text-brand-muted mb-1">Bekleyen</div>
             <div className="text-2xl font-black text-yellow-600">
               {earningSummary.totalPending.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
             </div>
+            {toUsd(earningSummary.totalPending) && (
+              <div className="text-sm text-brand-muted mt-1">${toUsd(earningSummary.totalPending)}</div>
+            )}
           </div>
           <div className="col-span-2 md:col-span-4 bg-brand-sand/40 rounded-2xl p-5 border border-brand-silver/20">
             <div className="text-sm font-bold text-brand-muted mb-1">Beklenen Toplam Ödeme (Yaklaşan Dönemler)</div>
@@ -218,6 +228,7 @@ export default function MentorPage() {
                 return (
                   <div className="flex flex-col md:flex-row md:items-center gap-2">
                     <span>{total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+                    {toUsd(total) && <span className="text-sm text-brand-muted">${toUsd(total)}</span>}
                     {dates.length > 0 && (
                       <span className="text-xs font-bold text-brand-muted">— {dates.join(", ")} tarihlerinde</span>
                     )}
@@ -395,9 +406,12 @@ export default function MentorPage() {
                   <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-xl font-black text-brand-dark">{title}</h2>
-                      <span className={`text-xl font-black ${isUpcoming ? "text-brand-logo" : "text-yellow-600"}`}>
-                        {grandTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xl font-black ${isUpcoming ? "text-brand-logo" : "text-yellow-600"}`}>
+                          {grandTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+                        </span>
+                        {toUsd(grandTotal) && <span className="text-sm text-brand-muted">${toUsd(grandTotal)}</span>}
+                      </div>
                     </div>
                     <div className="space-y-4">
                       {sortedGroups.map((group) => (
@@ -412,9 +426,12 @@ export default function MentorPage() {
                               </span>
                               <span className="text-xs text-brand-muted">({group.items.length} öğrenci)</span>
                             </div>
-                            <span className={`text-lg font-black ${isUpcoming ? "text-brand-logo" : "text-brand-dark"}`}>
-                              {group.total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-lg font-black ${isUpcoming ? "text-brand-logo" : "text-brand-dark"}`}>
+                                {group.total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+                              </span>
+                              {toUsd(group.total) && <span className="text-xs text-brand-muted">${toUsd(group.total)}</span>}
+                            </div>
                           </div>
                           <div className="divide-y divide-brand-silver/5">
                             {group.items.map((e) => (
@@ -425,7 +442,10 @@ export default function MentorPage() {
                                 </div>
                                 <div className="flex items-center gap-6">
                                   <span className="text-xs text-brand-muted font-medium">{e.completedWeeks} Hafta</span>
-                                  <span className="text-sm font-bold text-brand-dark">{e.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+                                  <div>
+                                    <span className="text-sm font-bold text-brand-dark">{e.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+                                    {toUsd(e.amount) && <span className="text-xs text-brand-muted ml-1">${toUsd(e.amount)}</span>}
+                                  </div>
                                   {statusBadge(e.status)}
                                 </div>
                               </div>

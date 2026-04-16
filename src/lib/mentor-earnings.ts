@@ -1,6 +1,7 @@
 import { prisma } from "./prisma"
 
 const DEFAULT_WEEKLY_RATE = 375
+const DEFAULT_USD_RATE = 0
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
 
 /**
@@ -14,6 +15,20 @@ export async function getWeeklyRate(): Promise<number> {
     return config ? parseFloat(config.value) : DEFAULT_WEEKLY_RATE
   } catch {
     return DEFAULT_WEEKLY_RATE
+  }
+}
+
+/**
+ * SystemConfig'den USD kuru okur. 0 = kur ayarlanmamıs (gösterme)
+ */
+export async function getUsdRate(): Promise<number> {
+  try {
+    const config = await prisma.systemConfig.findUnique({
+      where: { key: "USD_EXCHANGE_RATE" }
+    })
+    return config ? parseFloat(config.value) : DEFAULT_USD_RATE
+  } catch {
+    return DEFAULT_USD_RATE
   }
 }
 
