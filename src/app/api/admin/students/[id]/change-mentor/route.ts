@@ -56,21 +56,24 @@ export async function POST(
     // Get admin user ID for logging before transaction
     const adminUserId = await getAdminUserId()
 
+    // Kullanicinin sectigi tarih — gercek degisim gunu
+    const changeDate = new Date(startDate)
+
     // Use a transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
-      // End all active assignments for this student
+      // End all active assignments for this student — kullanıcının seçtiği tarihte bitir
       await tx.studentAssignment.updateMany({
         where: {
           studentId: studentId,
           endDate: null
         },
         data: {
-          endDate: new Date()
+          endDate: changeDate
         }
       })
 
-      // Finalize mentor earnings for ended assignments
-      const endDate = new Date()
+      // Finalize mentor earnings for ended assignments — seçilen tarih bazında hesapla
+      const endDate = changeDate
       for (const assignment of student.studentAssignments) {
         await finalizeMentorEarningForAssignment(
           tx,
@@ -98,7 +101,7 @@ export async function POST(
             metadata: {
               previousMentorId: assignment.mentor.id,
               previousMentorName: assignment.mentor.name,
-              endDate: new Date().toISOString()
+              endDate: changeDate.toISOString()
             }
           }
         })

@@ -403,7 +403,8 @@ export default function AssignmentsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-brand-muted mb-1">Başlangıç Tarihi *</label>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Değişiklik Tarihi *</label>
+                    <p className="text-[10px] text-brand-silver mb-1">Eski mentorun bitiş ve yeni mentorun başlangıç tarihi</p>
                     <input type="date" required className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={changeMentorData.startDate} onChange={(e) => setChangeMentorData({ ...changeMentorData, startDate: e.target.value })} />
                   </div>
                   <div>
