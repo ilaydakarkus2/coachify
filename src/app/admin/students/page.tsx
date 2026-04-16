@@ -48,6 +48,9 @@ export default function StudentsPage() {
   const router = useRouter()
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
@@ -172,8 +175,7 @@ export default function StudentsPage() {
     }
     setPhoneErrors({})
 
-    console.log("[Frontend] Creating student with data:", formData)
-
+    setCreating(true)
     try {
       const res = await fetch("/api/admin/students", {
         method: "POST",
@@ -217,6 +219,8 @@ export default function StudentsPage() {
     } catch (error) {
       console.error("[Frontend] Failed to create student:", error)
       alert("Failed to create student. Please try again.")
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -236,6 +240,7 @@ export default function StudentsPage() {
     console.log("[Frontend] Updating student:", selectedStudent.id)
     console.log("[Frontend] Edit form data:", editFormData)
 
+    setUpdating(true)
     try {
       // Mentor değişikliği kontrolü
       const currentMentorId = selectedStudent.studentAssignments?.[0]?.mentor?.id || ""
@@ -282,12 +287,15 @@ export default function StudentsPage() {
     } catch (error) {
       console.error("[Frontend] Failed to update student:", error)
       alert("Güncelleme başarısız. Tekrar deneyin.")
+    } finally {
+      setUpdating(false)
     }
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure? This will delete the student and all related data.")) return
 
+    setDeletingId(id)
     try {
       const res = await fetch(`/api/admin/students/${id}`, {
         method: "DELETE"
@@ -298,6 +306,8 @@ export default function StudentsPage() {
       }
     } catch (error) {
       console.error("Failed to delete student:", error)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -580,7 +590,11 @@ export default function StudentsPage() {
                   <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialNote} onChange={(e) => setFormData({ ...formData, specialNote: e.target.value })} />
                 </div>
               </div>
-              <button type="submit" className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-2 shadow-lg shadow-brand-primary/20">Öğrenci Ekle</button>
+              <button type="submit" disabled={creating} className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-2 shadow-lg shadow-brand-primary/20 disabled:opacity-70 flex items-center justify-center gap-2">
+                {creating ? (
+                  <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Ekleniyor...</>
+                ) : "Öğrenci Ekle"}
+              </button>
             </form>
           </div>
         )}
@@ -729,7 +743,11 @@ export default function StudentsPage() {
                       <label htmlFor="sendMessage" className="text-sm font-bold text-brand-muted">Mesaj Gidecek</label>
                     </div>
                   </div>
-                  <button type="submit" className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-4 shadow-lg shadow-brand-primary/20">Güncelle</button>
+                  <button type="submit" disabled={updating || editMentorSaving} className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-4 shadow-lg shadow-brand-primary/20 disabled:opacity-70 flex items-center justify-center gap-2">
+                    {updating || editMentorSaving ? (
+                      <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>{editMentorSaving ? "Mentor değiştiriliyor..." : "Güncelleniyor..."}</>
+                    ) : "Güncelle"}
+                  </button>
                 </form>
               </div>
             </div>
@@ -850,12 +868,16 @@ export default function StudentsPage() {
                         <button
                           onClick={() => handleReactivate(student.id, student.name)}
                           disabled={reactivating === student.id}
-                          className="text-green-600 hover:text-green-800 font-bold text-xs uppercase transition-colors disabled:opacity-50"
+                          className="text-green-600 hover:text-green-800 font-bold text-xs uppercase transition-colors disabled:opacity-50 flex items-center gap-1"
                         >
-                          {reactivating === student.id ? "Aktifleştiriliyor..." : "Yeniden Aktifleştir"}
+                          {reactivating === student.id ? (
+                            <><svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Aktifleştiriliyor...</>
+                          ) : "Yeniden Aktifleştir"}
                         </button>
                       )}
-                      <button onClick={() => handleDelete(student.id)} className="text-red-400 hover:text-red-600 font-bold text-xs uppercase transition-colors">Sil</button>
+                      <button onClick={() => handleDelete(student.id)} disabled={deletingId === student.id} className="text-red-400 hover:text-red-600 font-bold text-xs uppercase transition-colors disabled:opacity-50">
+                        {deletingId === student.id ? "Siliniyor..." : "Sil"}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -949,9 +971,11 @@ export default function StudentsPage() {
                   <button
                     type="submit"
                     disabled={extendLoading}
-                    className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-all disabled:opacity-50"
+                    className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {extendLoading ? "Kaydediliyor..." : `${extendData.weeks} Hafta Ekle`}
+                    {extendLoading ? (
+                      <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Kaydediliyor...</>
+                    ) : `${extendData.weeks} Hafta Ekle`}
                   </button>
                 </form>
               </div>
