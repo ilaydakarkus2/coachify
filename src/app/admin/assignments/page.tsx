@@ -65,6 +65,8 @@ export default function AssignmentsPage() {
   })
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 20
+  const [studentSearch, setStudentSearch] = useState("")
+  const [studentDropdownOpen, setStudentDropdownOpen] = useState(false)
 
   useEffect(() => {
     setPage(1)
@@ -237,20 +239,49 @@ export default function AssignmentsPage() {
                 <option value="ended">Sonlanmış</option>
               </select>
             </div>
-            <div>
+            <div className="relative">
               <label className="block text-sm font-bold text-brand-muted mb-1.5">Öğrenci</label>
-              <select
+              <input
+                type="text"
+                placeholder={filters.studentId ? students.find(s => s.id === filters.studentId)?.name || "Öğrenci ara..." : "Tüm Öğrenciler"}
                 className="w-full px-3 py-2 bg-white border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                value={filters.studentId}
-                onChange={(e) => setFilters({ ...filters, studentId: e.target.value })}
-              >
-                <option value="">Tüm Öğrenciler</option>
-                {students.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {student.name}
-                  </option>
-                ))}
-              </select>
+                value={studentSearch}
+                onChange={(e) => { setStudentSearch(e.target.value); setStudentDropdownOpen(true) }}
+                onFocus={() => setStudentDropdownOpen(true)}
+                onBlur={() => setTimeout(() => setStudentDropdownOpen(false), 150)}
+              />
+              {filters.studentId && !studentSearch && (
+                <button
+                  type="button"
+                  className="absolute right-8 top-[34px] text-brand-muted hover:text-brand-dark"
+                  onClick={() => { setFilters({ ...filters, studentId: "" }); setStudentSearch("") }}
+                >
+                  ×
+                </button>
+              )}
+              {studentDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-brand-silver rounded-lg shadow-lg max-h-60 overflow-auto">
+                  <button
+                    type="button"
+                    className={`w-full text-left px-3 py-2 hover:bg-brand-sand/50 text-sm ${!filters.studentId ? "bg-brand-primary/10 font-bold" : ""}`}
+                    onMouseDown={() => { setFilters({ ...filters, studentId: "" }); setStudentSearch(""); setStudentDropdownOpen(false) }}
+                  >
+                    Tüm Öğrenciler
+                  </button>
+                  {students
+                    .filter(s => !studentSearch || s.name.toLowerCase().includes(studentSearch.toLowerCase()))
+                    .map((student) => (
+                      <button
+                        key={student.id}
+                        type="button"
+                        className={`w-full text-left px-3 py-2 hover:bg-brand-sand/50 text-sm ${filters.studentId === student.id ? "bg-brand-primary/10 font-bold" : ""}`}
+                        onMouseDown={() => { setFilters({ ...filters, studentId: student.id }); setStudentSearch(""); setStudentDropdownOpen(false) }}
+                      >
+                        {student.name}
+                      </button>
+                    ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-bold text-brand-muted mb-1.5">Mentor</label>

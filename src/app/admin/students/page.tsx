@@ -148,7 +148,12 @@ export default function StudentsPage() {
       if (filters.status) params.append("status", filters.status)
       if (filters.search) params.append("search", filters.search)
       if (filters.mentorId) params.append("mentorId", filters.mentorId)
-      if (filters.paymentStatus) params.append("paymentStatus", filters.paymentStatus)
+      // "late"/"very_late" filtresi: DB'de pending olanları getir, frontend'de computed status'a göre filtrele
+      if (filters.paymentStatus === "late" || filters.paymentStatus === "very_late") {
+        params.append("paymentStatus", "pending")
+      } else if (filters.paymentStatus) {
+        params.append("paymentStatus", filters.paymentStatus)
+      }
       params.append("page", page.toString())
       params.append("pageSize", PAGE_SIZE.toString())
 
@@ -161,6 +166,24 @@ export default function StudentsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Ödeme durumunu otomatik hesapla: endDate'ye göre gecikme tespiti
+  const getEffectivePaymentStatus = (student: Student): { label: string; style: string } => {
+    if (student.paymentStatus === "paid") return { label: "Ödendi", style: "bg-green-100 text-green-700" }
+    if (student.paymentStatus === "late") return { label: "Gecikti", style: "bg-orange-100 text-orange-700" }
+    if (student.paymentStatus === "very_late") return { label: "Çok Gecikti", style: "bg-red-100 text-red-700" }
+    // pending: endDate'ye göre otomatik hesapla
+    if (student.endDate && student.paymentStatus === "pending") {
+      const now = new Date()
+      const end = new Date(student.endDate)
+      now.setHours(0, 0, 0, 0)
+      end.setHours(0, 0, 0, 0)
+      const diffDays = Math.floor((now.getTime() - end.getTime()) / (1000 * 60 * 60 * 24))
+      if (diffDays >= 7) return { label: "Çok Gecikti", style: "bg-red-100 text-red-700" }
+      if (diffDays >= 2) return { label: "Gecikti", style: "bg-orange-100 text-orange-700" }
+    }
+    return { label: "Bekliyor", style: "bg-yellow-100 text-yellow-700" }
   }
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -775,7 +798,15 @@ export default function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-brand-silver/5">
-                {students.map((student) => (
+                {students
+                  .filter(student => {
+                    if (!filters.paymentStatus || filters.paymentStatus === "paid" || filters.paymentStatus === "pending") return true
+                    const ps = getEffectivePaymentStatus(student)
+                    if (filters.paymentStatus === "late") return ps.label === "Gecikti"
+                    if (filters.paymentStatus === "very_late") return ps.label === "Çok Gecikti"
+                    return true
+                  })
+                  .map((student) => (
                   <tr key={student.id} className="hover:bg-brand-sand/30 transition-colors">
                     <td className="px-6 py-5 whitespace-nowrap">
                       <a href={`/admin/students/${student.id}`} className="text-sm font-bold text-brand-dark hover:text-brand-logo transition-colors cursor-pointer">{student.name}</a>
@@ -812,17 +843,10 @@ export default function StudentsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
-                        student.paymentStatus === "paid" ? "bg-green-100 text-green-700" :
-                        student.paymentStatus === "late" ? "bg-orange-100 text-orange-700" :
-                        student.paymentStatus === "very_late" ? "bg-red-100 text-red-700" :
-                        "bg-yellow-100 text-yellow-700"
-                      }`}>
-                        {student.paymentStatus === "paid" ? "Ödendi" :
-                         student.paymentStatus === "late" ? "Gecikti" :
-                         student.paymentStatus === "very_late" ? "Çok Gecikti" :
-                         "Bekliyor"}
-                      </span>
+                      {(() => {
+                        const ps = getEffectivePaymentStatus(student)
+                        return <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${ps.style}`}>{ps.label}</span>
+                      })()}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-[11px]">
 	                      <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-full ${
