@@ -5,6 +5,14 @@ const DEFAULT_USD_RATE = 0
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
 
 /**
+ * Herhangi bir Date nesnesini UTC gece yarısina normalize eder.
+ * Timezone ve saat bileşenini yoksayar, sadece takvim gününü kullanır.
+ */
+function toUTCDay(date: Date): Date {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+}
+
+/**
  * SystemConfig'den haftalik mentor odeme tutarini okur
  */
 export async function getWeeklyRate(): Promise<number> {
@@ -41,9 +49,8 @@ export function calculateMentorEarning(
   assignmentEnd: Date,
   weeklyRate: number = DEFAULT_WEEKLY_RATE
 ): { completedWeeks: number; amount: number } {
-  // Saat ve timezone bileşenini yoksay — UTC gün bazlı hesaplama
-  const startDay = new Date(Date.UTC(assignmentStart.getUTCFullYear(), assignmentStart.getUTCMonth(), assignmentStart.getUTCDate()))
-  const endDay = new Date(Date.UTC(assignmentEnd.getUTCFullYear(), assignmentEnd.getUTCMonth(), assignmentEnd.getUTCDate()))
+  const startDay = toUTCDay(assignmentStart)
+  const endDay = toUTCDay(assignmentEnd)
   const diffMs = endDay.getTime() - startDay.getTime()
 
   if (diffMs <= 0) return { completedWeeks: 0, amount: 0 }
@@ -69,31 +76,31 @@ export function getNextPaymentDate(
   studentStartDate: Date,
   currentDate: Date
 ): Date {
-  const ubgDay = studentStartDate.getDate()
+  const startDay = toUTCDay(studentStartDate)
+  const ubgDay = startDay.getUTCDate()
   const isFirstHalf = ubgDay <= 15
 
-  let year = studentStartDate.getFullYear()
-  let month = studentStartDate.getMonth() // 0-indexed
+  let year = startDay.getUTCFullYear()
+  let month = startDay.getUTCMonth()
 
   if (isFirstHalf) {
-    // "Takip eden donem" = bir sonraki ayin 15'i
     month += 1
     if (month > 11) { month = 0; year += 1 }
   } else {
-    // "Takip eden donem" = iki ay sonrasinin 1'i
     month += 2
     if (month > 11) { month -= 12; year += 1 }
   }
 
-  // Yarim-aylik adimlarla ilerle, currentDate'den buyuk/esit ilk tarihi bul
+  const currentDay = toUTCDay(currentDate)
+
   for (let i = 0; i < 200; i++) {
     const day = isFirstHalf
       ? (i % 2 === 0 ? 15 : 1)
       : (i % 2 === 0 ? 1 : 15)
 
-    const candidate = new Date(year, month, day)
+    const candidate = new Date(Date.UTC(year, month, day))
 
-    if (candidate >= currentDate) return candidate
+    if (candidate >= currentDay) return candidate
 
     if (i % 2 === 1) {
       month += 1
@@ -101,7 +108,7 @@ export function getNextPaymentDate(
     }
   }
 
-  return new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, isFirstHalf ? 15 : 1)
+  return new Date(Date.UTC(currentDay.getUTCFullYear(), currentDay.getUTCMonth() + 1, isFirstHalf ? 15 : 1))
 }
 
 /**
@@ -113,11 +120,12 @@ export function getNextPaymentDate(
  */
 export function getAllCycleDates(studentStartDate: Date, upToDate: Date): Date[] {
   const dates: Date[] = []
-  const ubgDay = studentStartDate.getDate()
+  const startDay = toUTCDay(studentStartDate)
+  const ubgDay = startDay.getUTCDate()
   const isFirstHalf = ubgDay <= 15
 
-  let year = studentStartDate.getFullYear()
-  let month = studentStartDate.getMonth()
+  let year = startDay.getUTCFullYear()
+  let month = startDay.getUTCMonth()
 
   if (isFirstHalf) {
     month += 1
@@ -132,8 +140,8 @@ export function getAllCycleDates(studentStartDate: Date, upToDate: Date): Date[]
       ? (i % 2 === 0 ? 15 : 1)
       : (i % 2 === 0 ? 1 : 15)
 
-    const cycleDate = new Date(year, month, day)
-    if (cycleDate > upToDate) break
+    const cycleDate = new Date(Date.UTC(year, month, day))
+    if (cycleDate > toUTCDay(upToDate)) break
     dates.push(cycleDate)
 
     if (i % 2 === 1) {
@@ -149,9 +157,9 @@ export function getAllCycleDates(studentStartDate: Date, upToDate: Date): Date[]
  * Iki Date nesnesinin ayni gun olup olmadigini kontrol eder (saat gozardi).
  */
 function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear()
-    && a.getMonth() === b.getMonth()
-    && a.getDate() === b.getDate()
+  const aDay = toUTCDay(a)
+  const bDay = toUTCDay(b)
+  return aDay.getTime() === bDay.getTime()
 }
 
 /**
@@ -292,11 +300,12 @@ export async function calculatePendingEarnings(adminUserId: string): Promise<num
   let created = 0
 
   for (const assignment of assignments) {
-    const assignmentEnd = assignment.endDate ?? now
+    const assignmentEnd = toUTCDay(assignment.endDate ?? now)
 
     const sag = assignment.student.purchaseDate ?? assignment.student.startDate
     const allCycleDates = getAllCycleDates(sag, now)
-    const cycleDates = allCycleDates.filter(d => d > assignment.startDate)
+    const assignmentStartDay = toUTCDay(assignment.startDate)
+    const cycleDates = allCycleDates.filter(d => d > assignmentStartDay)
 
     if (cycleDates.length === 0) continue
 
@@ -409,15 +418,16 @@ export async function calculatePendingEarningsForMentor(mentorId: string, adminU
     const sag = assignment.student.purchaseDate ?? assignment.student.startDate
     const studentEnd = assignment.student.endDate ? new Date(assignment.student.endDate) : null
     const allCycleDates = getAllCycleDates(sag, futureDate)
-    const cycleDates = allCycleDates.filter(d => d > assignment.startDate)
+    const assignmentStartDay = toUTCDay(assignment.startDate)
+    const cycleDates = allCycleDates.filter(d => d > assignmentStartDay)
 
     if (cycleDates.length === 0) continue
 
     const existingRecords = earningsByAssignment.get(assignment.id) || []
 
     const assignmentEndDate = assignment.endDate
-      ? new Date(assignment.endDate)
-      : studentEnd
+      ? toUTCDay(new Date(assignment.endDate))
+      : studentEnd ? toUTCDay(studentEnd) : null
 
     let runningTotal = 0
 
