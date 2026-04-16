@@ -583,6 +583,11 @@ export default function StudentsPage() {
                     <option value="yks_kadar">YKS'ye Kadar</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-bold text-brand-muted mb-1">Bitiş Tarihi</label>
+                  <p className="text-[10px] text-brand-silver mb-1">Boş bırakılırsa paket türüne göre otomatik hesaplanır</p>
+                  <input type="date" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
+                </div>
                 <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
                   <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-2">Veli Bilgileri</p>
                 </div>
