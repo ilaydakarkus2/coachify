@@ -153,21 +153,24 @@ export async function POST(request: NextRequest) {
       const startDate = body.startDate ? new Date(body.startDate) : new Date()
       console.log("[REGISTER] StartDate:", startDate.toISOString())
 
-      // EndDate hesaplama - paket turune gore
-      let endDate: Date | null = null
+      // EndDate hesaplama - paket turune gore (UTC guvenli)
+      let endDate: Date
       const pkgType = body.packageType || "1_aylik"
 
-      if (pkgType === "1_aylik") {
-        // 4 hafta = 28 gun
-        endDate = new Date(startDate)
-        endDate.setDate(endDate.getDate() + 28)
-        console.log("[REGISTER] EndDate hesaplandi (4 hafta):", endDate.toISOString())
-      } else if (pkgType === "yks_kadar") {
+      if (pkgType === "yks_kadar") {
         // YKS 2026: 14-15 Haziran 2026 -> 15 Haziran 2026 olarak set et
         endDate = new Date("2026-06-15")
         console.log("[REGISTER] EndDate hesaplandi (YKS):", endDate.toISOString())
+      } else {
+        // UTC-guvenli ay ekleme
+        const totalMonths = startDate.getUTCMonth() + 1
+        const year = startDate.getUTCFullYear() + Math.floor(totalMonths / 12)
+        const month = totalMonths % 12
+        const maxDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+        const day = Math.min(startDate.getUTCDate(), maxDay)
+        endDate = new Date(Date.UTC(year, month, day))
+        console.log("[REGISTER] EndDate hesaplandi (1 ay):", endDate.toISOString())
       }
-      // Diger durumlarda endDate null kalir
 
       // Student olustur
       console.log("[REGISTER] Student olusturuluyor - name:", body.name, "email:", studentEmail)
@@ -182,7 +185,7 @@ export async function POST(request: NextRequest) {
           startDate,
           endDate,
           status: "active",
-          paymentStatus: "pending",
+          paymentStatus: "paid",
           packageDuration: body.packageDuration || 4,
           purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : new Date(),
           membershipStartDate: body.membershipStartDate

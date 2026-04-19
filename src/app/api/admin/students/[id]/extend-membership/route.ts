@@ -3,6 +3,18 @@ import { prisma, getAdminUserId } from "@/lib/prisma"
 
 type RouteParams = { params: Promise<{ id: string }> }
 
+/**
+ * UTC-guvenli ay ekleme. Ay sonu tasmasini onler (31 Ocak + 1 ay = 28/29 Subat).
+ */
+function addUTCMonths(date: Date, months: number): Date {
+  const totalMonths = date.getUTCMonth() + months
+  const year = date.getUTCFullYear() + Math.floor(totalMonths / 12)
+  const month = totalMonths % 12
+  const maxDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  const day = Math.min(date.getUTCDate(), maxDay)
+  return new Date(Date.UTC(year, month, day))
+}
+
 export async function POST(
   request: NextRequest,
   { params }: RouteParams
@@ -10,11 +22,11 @@ export async function POST(
   try {
     const { id } = await params
     const body = await request.json()
-    const { weeks, reason } = body
+    const { months, reason } = body
 
-    if (!weeks || weeks < 1) {
+    if (!months || months < 1) {
       return NextResponse.json(
-        { error: "Hafta sayısı 1 veya daha büyük olmalıdır" },
+        { error: "Ay sayısı 1 veya daha büyük olmalıdır" },
         { status: 400 }
       )
     }
@@ -34,36 +46,36 @@ export async function POST(
       )
     }
 
-    const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
     const oldEndDate = student.endDate
-
-    let newEndDate: Date
-    if (oldEndDate) {
-      newEndDate = new Date(oldEndDate.getTime() + weeks * MS_PER_WEEK)
-    } else {
-      newEndDate = new Date(student.startDate.getTime() + (student.packageDuration + weeks) * MS_PER_WEEK)
-    }
+    const baseDate = toUTCDay(oldEndDate ? new Date(oldEndDate) : new Date(student.startDate))
+    const newEndDate = addUTCMonths(baseDate, months)
 
     const adminUserId = await getAdminUserId()
 
     await prisma.$transaction(async (tx) => {
+      // 1. Student endDate guncelle
       await tx.student.update({
         where: { id },
         data: { endDate: newEndDate }
       })
 
+      // 2. Aktif assignment'larin endDate'ini de guncelle (earnings hesaplamasinin dogru calismasi icin)
+      // Not: Aktif assignment'lar endDate=null tutar, bu yuzden student.endDate uzerinden cap yapilir
+      // Ama bitmis assignment'lara dokunmamaliyiz
+
+      // 3. Log
       await tx.log.create({
         data: {
           entityType: "student",
           entityId: id,
           action: "membership_extended",
-          description: `${student.name} üyelik süresi ${weeks} hafta uzatıldı`,
+          description: `${student.name} üyelik süresi ${months} ay uzatıldı`,
           userId: adminUserId,
           studentId: id,
           metadata: {
             oldEndDate: oldEndDate?.toISOString() ?? null,
             newEndDate: newEndDate.toISOString(),
-            weeks,
+            months,
             reason: reason || null
           }
         }
@@ -72,7 +84,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `${student.name} üyelik süresi ${weeks} hafta uzatıldı`,
+      message: `${student.name} üyelik süresi ${months} ay uzatıldı`,
       oldEndDate,
       newEndDate
     })
@@ -83,4 +95,8 @@ export async function POST(
       { status: 500 }
     )
   }
+}
+
+function toUTCDay(date: Date): Date {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
 }

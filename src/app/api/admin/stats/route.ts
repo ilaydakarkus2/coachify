@@ -14,7 +14,7 @@ interface Stats {
   upcomingExpirations: Array<{
     id: string
     name: string
-    email: string
+    email: string | null
     endDate: string
     daysLeft: number
     mentor: {
@@ -63,7 +63,7 @@ export async function GET() {
       where: { status: "paid" }
     })
 
-    stats.totalRevenue = paidPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    stats.totalRevenue = paidPayments.reduce((sum, payment) => sum + Number(payment.amount), 0)
 
     // Get total mentors
     const totalMentors = await prisma.mentor.count()
@@ -150,7 +150,7 @@ export async function GET() {
       }
     })
 
-    stats.currentMonthRevenue = currentMonthPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    stats.currentMonthRevenue = currentMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0)
 
     // Get last month revenue for comparison
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -166,7 +166,7 @@ export async function GET() {
       }
     })
 
-    stats.lastMonthRevenue = lastMonthPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    stats.lastMonthRevenue = lastMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0)
 
     // Calculate growth percentage
     if (stats.lastMonthRevenue > 0) {

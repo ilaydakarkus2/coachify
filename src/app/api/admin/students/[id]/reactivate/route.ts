@@ -3,6 +3,18 @@ import { prisma, getAdminUserId } from "@/lib/prisma"
 
 type RouteParams = { params: Promise<{ id: string }> }
 
+/**
+ * UTC-guvenli ay ekleme.
+ */
+function addUTCMonths(date: Date, months: number): Date {
+  const totalMonths = date.getUTCMonth() + months
+  const year = date.getUTCFullYear() + Math.floor(totalMonths / 12)
+  const month = totalMonths % 12
+  const maxDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  const day = Math.min(date.getUTCDate(), maxDay)
+  return new Date(Date.UTC(year, month, day))
+}
+
 export async function POST(
   request: NextRequest,
   { params }: RouteParams
@@ -30,13 +42,17 @@ export async function POST(
 
     const adminUserId = await getAdminUserId()
 
+    // Reactivate icin yeni endDate hesapla (bugunden itibaren 1 ay) — UTC guvenli
+    const now = new Date()
+    const newEndDate = addUTCMonths(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())), 1)
+
     await prisma.$transaction(async (tx) => {
       // 1. Ogrenciyi aktife cevir
       await tx.student.update({
         where: { id },
         data: {
           status: "active",
-          endDate: null,
+          endDate: newEndDate,
           dropReason: null,
           refundStatus: null,
         }
@@ -51,11 +67,31 @@ export async function POST(
         })
       }
 
-      // 3. Sonlandirma sirasinda olusturulmus hakedisleri iptal et
+      // 3. Sonlandirma sirasinda olusturulmus hakedisleri IPTAL ET (silme — audit trail korunur)
       await tx.mentorEarning.updateMany({
         where: {
           studentId: id,
           triggerReason: { in: ["student_drop", "student_refund", "student_refund_14day"] },
+          status: { not: "paid" } // Odenmis kayitlara dokunma
+        },
+        data: { status: "cancelled" }
+      })
+
+      // Periodic_calc ile olusturulmus iptal edilmis kayitlari da sil
+      // (ki yeniden hesaplama yapilabilsin — bunlar zaten cancelled, audit trail kaybi yok)
+      await tx.mentorEarning.deleteMany({
+        where: {
+          studentId: id,
+          triggerReason: "periodic_calc",
+          status: "cancelled",
+        }
+      })
+
+      // Periodic_calc ile olusturulmus pending kayitlari da iptal et
+      await tx.mentorEarning.updateMany({
+        where: {
+          studentId: id,
+          triggerReason: "periodic_calc",
           status: "pending",
         },
         data: { status: "cancelled" }

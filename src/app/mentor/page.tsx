@@ -13,10 +13,8 @@ interface StudentInfo {
   school: string
   grade: string
   studentStartDate: string
-  endDate: string | null
   status: string
   assignmentStartDate: string
-  assignmentEndDate?: string | null
   currentNetScore: number | null
   targetNetScore: number | null
 }
@@ -202,19 +200,19 @@ export default function MentorPage() {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
             <div className="text-sm font-bold text-brand-muted mb-1">Kazanılan</div>
             <div className="text-2xl font-black text-green-600">
-              {earningSummary.totalEarned.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+              {Number(earningSummary.totalEarned).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
             </div>
-            {toUsd(earningSummary.totalEarned) && (
-              <div className="text-sm text-brand-muted mt-1">${toUsd(earningSummary.totalEarned)}</div>
+            {toUsd(Number(earningSummary.totalEarned)) && (
+              <div className="text-sm text-brand-muted mt-1">${toUsd(Number(earningSummary.totalEarned))}</div>
             )}
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
             <div className="text-sm font-bold text-brand-muted mb-1">Bekleyen</div>
             <div className="text-2xl font-black text-yellow-600">
-              {earningSummary.totalPending.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+              {Number(earningSummary.totalPending).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
             </div>
-            {toUsd(earningSummary.totalPending) && (
-              <div className="text-sm text-brand-muted mt-1">${toUsd(earningSummary.totalPending)}</div>
+            {toUsd(Number(earningSummary.totalPending)) && (
+              <div className="text-sm text-brand-muted mt-1">${toUsd(Number(earningSummary.totalPending))}</div>
             )}
           </div>
           <div className="col-span-2 md:col-span-4 bg-brand-sand/40 rounded-2xl p-5 border border-brand-silver/20">
@@ -223,7 +221,7 @@ export default function MentorPage() {
               {(() => {
                 const now = new Date()
                 const upcoming = earnings.filter(e => e.status === "pending" && new Date(e.cycleDate) > now)
-                const total = upcoming.reduce((sum, e) => sum + e.amount, 0)
+                const total = upcoming.reduce((sum, e) => sum + Number(e.amount), 0)
                 const dates = [...new Set(upcoming.map(e => new Date(e.cycleDate).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })))]
                 return (
                   <div className="flex flex-col md:flex-row md:items-center gap-2">
@@ -338,7 +336,6 @@ export default function MentorPage() {
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul / Sınıf</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Başlangıç</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Atanma</th>
-                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Bitiş</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
                       </tr>
                     </thead>
@@ -358,11 +355,6 @@ export default function MentorPage() {
                           </td>
                           <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-logo font-medium">
                             {new Date(s.assignmentStartDate).toLocaleDateString("tr-TR")}
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-silver italic">
-                            {s.assignmentEndDate
-                              ? new Date(s.assignmentEndDate).toLocaleDateString("tr-TR")
-                              : "-"}
                           </td>
                           <td className="px-6 py-5 whitespace-nowrap">
                             {studentStatusBadge(s.status)}
@@ -394,7 +386,7 @@ export default function MentorPage() {
                   const key = new Date(e.cycleDate).toLocaleDateString("tr-TR")
                   if (!acc[key]) acc[key] = { cycleDate: e.cycleDate, items: [], total: 0 }
                   acc[key].items.push(e)
-                  acc[key].total += e.amount
+                  acc[key].total += Number(e.amount)
                   return acc
                 }, {} as Record<string, { cycleDate: string; items: Earning[]; total: number }>)
                 const sortedGroups = Object.values(grouped).sort(
@@ -443,8 +435,8 @@ export default function MentorPage() {
                                 <div className="flex items-center gap-6">
                                   <span className="text-xs text-brand-muted font-medium">{e.completedWeeks} Hafta</span>
                                   <div>
-                                    <span className="text-sm font-bold text-brand-dark">{e.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
-                                    {toUsd(e.amount) && <span className="text-xs text-brand-muted ml-1">${toUsd(e.amount)}</span>}
+                                    <span className="text-sm font-bold text-brand-dark">{Number(e.amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
+                                    {toUsd(Number(e.amount)) && <span className="text-xs text-brand-muted ml-1">${toUsd(Number(e.amount))}</span>}
                                   </div>
                                   {statusBadge(e.status)}
                                 </div>

@@ -93,9 +93,9 @@ export async function POST(request: NextRequest) {
             specialNote, membershipType, discountCode, stripeId,
             contactPreference, sendMessage } = body;
 
-    if (!name || !email || !phone || !school || !grade || !startDate) {
+    if (!name || !phone || !startDate || !endDate) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: name, phone, startDate, endDate" },
         { status: 400 }
       );
     }
@@ -109,31 +109,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingStudent = await prisma.student.findUnique({
-      where: { email }
-    });
+    // Email unique kontrolü sadece email verildiyse
+    if (email) {
+      const existingStudent = await prisma.student.findUnique({
+        where: { email }
+      });
 
-    if (existingStudent) {
-      return NextResponse.json(
-        { error: "Student with this email already exists" },
-        { status: 400 }
-      );
+      if (existingStudent) {
+        return NextResponse.json(
+          { error: "Student with this email already exists" },
+          { status: 400 }
+        );
+      }
     }
 
     const startDt = new Date(startDate)
     let endDt: Date | null = endDate ? new Date(endDate) : null;
     if (!endDt && body.packageType === "1_aylik") {
-      endDt = new Date(startDt.getTime() + 4 * 7 * 24 * 60 * 60 * 1000);
+      // UTC-guvenli ay ekleme
+      const totalMonths = startDt.getUTCMonth() + 1
+      const year = startDt.getUTCFullYear() + Math.floor(totalMonths / 12)
+      const month = totalMonths % 12
+      const maxDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+      const day = Math.min(startDt.getUTCDate(), maxDay)
+      endDt = new Date(Date.UTC(year, month, day))
     }
     const student = await prisma.student.create({
       data: {
         name,
-        email,
+        email: email || null,
         phone,
-        school,
-        grade,
+        school: school || "",
+        grade: grade || "",
         startDate: startDt,
-        endDate: endDt,
+        endDate: new Date(endDate),
+        paymentStatus: "paid",
         purchaseDate: new Date(),
         parentName: parentName || null,
         parentPhone: parentPhone || null,

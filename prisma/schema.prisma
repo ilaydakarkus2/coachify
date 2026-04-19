@@ -43,15 +43,15 @@ model Mentor {
 model Student {
   id              String             @id @default(uuid())
   name            String
-  email           String             @unique
+  email           String?            @unique
   studentNumber   Int?               @unique
   phone           String
   school          String
   grade           String
   startDate       DateTime
-  endDate         DateTime?
+  endDate         DateTime
   status          String             @default("active") // "active", "dropped", "refunded"
-  paymentStatus   String             @default("pending") // "pending", "paid", "refunded"
+  paymentStatus   String             @default("paid") // "pending", "paid", "refunded"
   packageDuration Int                @default(4) // weeks
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
@@ -141,7 +141,7 @@ model Payment {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  amount      Float
+  amount      Decimal  @db.Decimal(12, 2)
   weeks       Int      // Number of weeks completed
   paymentDate DateTime @default(now())
   status      String   @default("pending") // "pending", "paid", "refunded"
@@ -162,14 +162,16 @@ model MentorEarning {
   studentId       String
   student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   assignmentId    String
-  assignment      StudentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignment      StudentAssignment @relation(fields: [assignmentId], references: [id], onDelete: NoAction, onUpdate: Cascade)
 
   completedWeeks  Int
-  amount          Float
+  amount          Decimal  @db.Decimal(12, 2)
+  weeklyRate      Decimal  @db.Decimal(10, 2)   // Hesaplama anindaki haftalik ucret (rate-lock)
   cycleDate       DateTime
   status          String   @default("pending") // "pending", "paid", "cancelled"
+  paidAt          DateTime?                    // Odeme tarihi
 
-  triggerReason   String   // "assignment_end", "student_drop", "student_refund", "periodic_calc", "manual"
+  triggerReason   String   // "assignment_end", "student_drop", "student_refund", "student_refund_14day", "periodic_calc", "membership_renewal", "assignment_deleted", "manual"
   assignmentStart DateTime
   assignmentEnd   DateTime?
 
@@ -178,10 +180,14 @@ model MentorEarning {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@unique([studentId, mentorId, cycleDate])
+  @@unique([studentId, mentorId, assignmentId, cycleDate])
   @@index([mentorId, status])
   @@index([cycleDate])
   @@index([mentorId, cycleDate])
+  @@index([assignmentId])
+  @@index([assignmentId, status])
+  @@index([triggerReason])
+  @@index([assignmentId, triggerReason, status])
 }
 
 model SystemConfig {

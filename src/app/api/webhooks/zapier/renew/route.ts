@@ -110,20 +110,27 @@ export async function POST(request: NextRequest) {
           student.id,
           assignment.startDate,
           newStartDate,
-          "periodic_calc",
+          "membership_renewal",
           adminUserId,
           student.purchaseDate ?? student.startDate
         )
       }
+
+      // Yeni endDate hesapla (startDate + 1 ay) — UTC guvenli
+      const newEndDate = new Date(Date.UTC(
+        newStartDate.getUTCFullYear(),
+        newStartDate.getUTCMonth() + 1,
+        Math.min(newStartDate.getUTCDate(), new Date(Date.UTC(newStartDate.getUTCFullYear(), newStartDate.getUTCMonth() + 2, 0)).getUTCDate())
+      ))
 
       // Student guncelle
       const updatedStudent = await tx.student.update({
         where: { id: student.id },
         data: {
           startDate: newStartDate,
-          endDate: null,
+          endDate: newEndDate,
           status: "active",
-          paymentStatus: "pending",
+          paymentStatus: "paid",
           packageDuration: body.newPackageDuration || student.packageDuration,
           membershipStartDate: newStartDate,
           // purchaseDate (SAG) değişmez — yenileme sırasında sabit kalır
@@ -174,7 +181,7 @@ export async function POST(request: NextRequest) {
     // Google Sheets sync (fire-and-forget)
     if (isSheetsEnabled()) {
       try {
-        await updateStudentRow(student.email, {
+        await updateStudentRow(student.email || "", {
           startDate: newStartDate.toISOString().split("T")[0],
           status: "active",
           membershipStartDate: newStartDate.toISOString().split("T")[0],

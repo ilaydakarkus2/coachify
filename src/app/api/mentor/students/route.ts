@@ -29,7 +29,6 @@ export async function GET() {
             school: true,
             grade: true,
             startDate: true,
-            endDate: true,
             status: true,
             currentNetScore: true,
             targetNetScore: true,
@@ -49,9 +48,7 @@ export async function GET() {
         school: a.student.school,
         grade: a.student.grade,
         studentStartDate: a.student.startDate,
-        endDate: a.student.endDate,
         status: a.student.status,
-        // Mentor değişikliği: öğrencinin bu mentora geçtiği tarih
         assignmentStartDate: a.startDate,
         currentNetScore: a.student.currentNetScore,
         targetNetScore: a.student.targetNetScore,
@@ -67,10 +64,8 @@ export async function GET() {
         school: a.student.school,
         grade: a.student.grade,
         studentStartDate: a.student.startDate,
-        endDate: a.student.endDate,
         status: a.student.status,
         assignmentStartDate: a.startDate,
-        assignmentEndDate: a.endDate,
         currentNetScore: a.student.currentNetScore,
         targetNetScore: a.student.targetNetScore,
       }))

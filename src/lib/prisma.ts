@@ -17,11 +17,19 @@ const CACHE_TTL = 5 * 60 * 1000 // 5 dakika
 
 /**
  * Admin user ID'sini dondurur. In-memory cache ile DB sorgusunu azaltir.
+ * Cache gecersiz olma ihtimaline karsi (user silinmesi vs) fallback mekanizmasi var.
  */
 export async function getAdminUserId(): Promise<string> {
   const now = Date.now()
   if (cachedAdminUserId && (now - cachedAt) < CACHE_TTL) {
-    return cachedAdminUserId
+    // Cache'in hala gecerli olup olmadigini kontrol et
+    const exists = await prisma.user.findUnique({
+      where: { id: cachedAdminUserId }
+    })
+    if (exists) return cachedAdminUserId
+    // Cache stale — temizle
+    cachedAdminUserId = null
+    cachedAt = 0
   }
 
   const admin = await prisma.user.findFirst({

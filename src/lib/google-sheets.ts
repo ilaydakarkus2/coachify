@@ -17,7 +17,7 @@ import { google } from "googleapis"
 
 interface StudentRow {
   name: string
-  email: string
+  email: string | null
   phone: string
   school: string
   grade: string
@@ -77,7 +77,7 @@ function getSheetId(): string {
 function toRowValues(row: StudentRow): string[] {
   return [
     row.name,                                      // A
-    row.email,                                     // B
+    row.email || "",                                     // B
     row.phone,                                     // C
     row.school,                                    // D
     row.grade,                                     // E

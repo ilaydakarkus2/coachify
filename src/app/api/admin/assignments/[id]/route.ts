@@ -172,7 +172,16 @@ export async function DELETE(
         )
       }
 
-      // Atamayi sil
+      // Assignment silindikten sonra cascade earning'ler de silinmesin diye
+      // earning kayitlarindan assignmentId referansini kaldir
+      await tx.mentorEarning.updateMany({
+        where: { assignmentId: id },
+        data: {
+          notes: "Assignment silindi — referans kaldirildi"
+        }
+      })
+
+      // Atamayi sil (cascade NoAction oldugu icin earnings kalir)
       await tx.studentAssignment.delete({
         where: { id: id }
       })

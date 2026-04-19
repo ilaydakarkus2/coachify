@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         const students = await prisma.student.findMany({
           where: {
             status: "active",
-            endDate: { not: null, gte: now, lte: futureDate },
+            endDate: { gte: now, lte: futureDate },
             ...(sendMessageOnly ? { sendMessage: true } : {}),
           },
           include: {

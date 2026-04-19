@@ -9,7 +9,6 @@ interface Student {
   name: string
   email: string
   phone: string
-  school: string
   grade: string
   startDate: string
   endDate: string | null
@@ -58,7 +57,6 @@ export default function StudentsPage() {
     name: "",
     email: "",
     phone: "",
-    school: "",
     grade: "",
     startDate: "",
     endDate: "",
@@ -77,7 +75,6 @@ export default function StudentsPage() {
     name: "",
     email: "",
     phone: "",
-    school: "",
     grade: "",
     startDate: "",
     endDate: "",
@@ -112,7 +109,7 @@ export default function StudentsPage() {
   const [mentorDropdownOpen, setMentorDropdownOpen] = useState(false)
   const [showExtendForm, setShowExtendForm] = useState(false)
   const [extendStudent, setExtendStudent] = useState<Student | null>(null)
-  const [extendData, setExtendData] = useState({ weeks: 1, reason: "" })
+  const [extendData, setExtendData] = useState({ months: 1, reason: "" })
   const [extendLoading, setExtendLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
@@ -223,7 +220,6 @@ export default function StudentsPage() {
         name: "",
         email: "",
         phone: "",
-        school: "",
         grade: "",
         startDate: "",
         endDate: "",
@@ -373,7 +369,7 @@ export default function StudentsPage() {
 
       setShowExtendForm(false)
       setExtendStudent(null)
-      setExtendData({ weeks: 1, reason: "" })
+      setExtendData({ months: 1, reason: "" })
       fetchStudents()
     } catch (error) {
       console.error("Failed to extend membership:", error)
@@ -385,19 +381,19 @@ export default function StudentsPage() {
 
   const openExtendForm = (student: Student) => {
     setExtendStudent(student)
-    setExtendData({ weeks: 1, reason: "" })
+    setExtendData({ months: 1, reason: "" })
     setShowExtendForm(true)
   }
 
   const getPreviewEndDate = () => {
     if (!extendStudent) return ""
-    const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
     let base: Date
     if (extendStudent.endDate) {
       base = new Date(extendStudent.endDate)
-      base = new Date(base.getTime() + extendData.weeks * MS_PER_WEEK)
+      base.setMonth(base.getMonth() + extendData.months)
     } else {
-      base = new Date(new Date(extendStudent.startDate).getTime() + (4 + extendData.weeks) * MS_PER_WEEK)
+      base = new Date(extendStudent.startDate)
+      base.setMonth(base.getMonth() + extendData.months)
     }
     return base.toLocaleDateString("tr-TR")
   }
@@ -407,9 +403,8 @@ export default function StudentsPage() {
     setSelectedStudent(student)
     setEditFormData({
       name: student.name,
-      email: student.email,
+      email: student.email || "",
       phone: student.phone,
-      school: student.school,
       grade: student.grade,
       startDate: student.startDate.split("T")[0],
       endDate: student.endDate ? student.endDate.split("T")[0] : "",
@@ -536,94 +531,94 @@ export default function StudentsPage() {
           </div>
         </div>
 
-        {/* Yeni Öğrenci Formu */}
+        {/* Yeni Öğrenci Modalı */}
         {showForm && (
-          <div className="bg-white p-6 rounded-2xl shadow-xl border border-brand-silver/10 mb-6">
-            <h3 className="text-xl font-bold text-brand-dark mb-4">Yeni Öğrenci Ekle</h3>
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Ad Soyad *</label>
-                  <input type="text" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+          <div className="fixed inset-0 bg-brand-dark/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-t-8 border-brand-primary">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-brand-dark">Yeni Öğrenci Ekle</h3>
+                  <button onClick={() => setShowForm(false)} className="text-brand-silver hover:text-brand-dark text-2xl transition-colors">✕</button>
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">E-posta *</label>
-                  <input type="email" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Telefon</label>
-                  <input type="text" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none ${phoneErrors.phone ? 'border-red-400' : 'border-brand-silver'}`} value={formData.phone} onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); if (phoneErrors.phone) setPhoneErrors({ ...phoneErrors, phone: undefined }) }} onBlur={() => { const err = validatePhoneFormat(formData.phone); if (err) setPhoneErrors({ ...phoneErrors, phone: err }) }} />
-                  {phoneErrors.phone && <p className="text-xs text-red-500 mt-1">{phoneErrors.phone}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Okul</label>
-                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.school} onChange={(e) => setFormData({ ...formData, school: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf</label>
-                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Mentor *</label>
-                  <select required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.mentorId} onChange={(e) => setFormData({ ...formData, mentorId: e.target.value })}>
-                    <option value="">Mentor Seç</option>
-                    {mentors.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Başlangıç Tarihi</label>
-                  <input type="date" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Paket Türü *</label>
-                  <select required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.packageType} onChange={(e) => setFormData({ ...formData, packageType: e.target.value })}>
-                    <option value="1_aylik">1 Aylık</option>
-                    <option value="yks_kadar">YKS'ye Kadar</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Bitiş Tarihi</label>
-                  <p className="text-[10px] text-brand-silver mb-1">Boş bırakılırsa paket türüne göre otomatik hesaplanır</p>
-                  <input type="date" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
-                </div>
-                <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
-                  <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-2">Veli Bilgileri</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Veli Adı Soyadı</label>
-                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentName} onChange={(e) => setFormData({ ...formData, parentName: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Veli Telefonu</label>
-                  <input type="text" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none ${phoneErrors.parentPhone ? 'border-red-400' : 'border-brand-silver'}`} value={formData.parentPhone} onChange={(e) => { setFormData({ ...formData, parentPhone: e.target.value }); if (phoneErrors.parentPhone) setPhoneErrors({ ...phoneErrors, parentPhone: undefined }) }} onBlur={() => { const err = validatePhoneFormat(formData.parentPhone); if (err) setPhoneErrors({ ...phoneErrors, parentPhone: err }) }} />
-                  {phoneErrors.parentPhone && <p className="text-xs text-red-500 mt-1">{phoneErrors.parentPhone}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">İletişim Tercihi</label>
-                  <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.contactPreference} onChange={(e) => setFormData({ ...formData, contactPreference: e.target.value })}>
-                    <option value="">Belirtilmedi</option>
-                    <option value="student">Öğrenci</option>
-                    <option value="parent">Veli</option>
-                    <option value="both">Hem Öğrenci Hem Veli</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-brand-muted mb-1">İndirim Kodu</label>
-                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.discountCode} onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-brand-muted mb-1">Özel Açıklama</label>
-                  <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialNote} onChange={(e) => setFormData({ ...formData, specialNote: e.target.value })} />
-                </div>
+                <form onSubmit={handleCreateSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Ad Soyad *</label>
+                      <input type="text" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">E-posta</label>
+                      <input type="email" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Telefon *</label>
+                      <input type="text" required className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none ${phoneErrors.phone ? 'border-red-400' : 'border-brand-silver'}`} value={formData.phone} onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); if (phoneErrors.phone) setPhoneErrors({ ...phoneErrors, phone: undefined }) }} onBlur={() => { const err = validatePhoneFormat(formData.phone); if (err) setPhoneErrors({ ...phoneErrors, phone: err }) }} />
+                      {phoneErrors.phone && <p className="text-xs text-red-500 mt-1">{phoneErrors.phone}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf</label>
+                      <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Mentor *</label>
+                      <select required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.mentorId} onChange={(e) => setFormData({ ...formData, mentorId: e.target.value })}>
+                        <option value="">Mentor Seç</option>
+                        {mentors.map((m) => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Başlangıç Tarihi *</label>
+                      <input type="date" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Paket Türü *</label>
+                      <select required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.packageType} onChange={(e) => setFormData({ ...formData, packageType: e.target.value })}>
+                        <option value="1_aylik">1 Aylık</option>
+                        <option value="yks_kadar">YKS'ye Kadar</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Bitiş Tarihi *</label>
+                      <input type="date" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
+                      <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-2">Veli Bilgileri</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Veli Adı Soyadı</label>
+                      <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.parentName} onChange={(e) => setFormData({ ...formData, parentName: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Veli Telefonu</label>
+                      <input type="text" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none ${phoneErrors.parentPhone ? 'border-red-400' : 'border-brand-silver'}`} value={formData.parentPhone} onChange={(e) => { setFormData({ ...formData, parentPhone: e.target.value }); if (phoneErrors.parentPhone) setPhoneErrors({ ...phoneErrors, parentPhone: undefined }) }} onBlur={() => { const err = validatePhoneFormat(formData.parentPhone); if (err) setPhoneErrors({ ...phoneErrors, parentPhone: err }) }} />
+                      {phoneErrors.parentPhone && <p className="text-xs text-red-500 mt-1">{phoneErrors.parentPhone}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">İletişim Tercihi</label>
+                      <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.contactPreference} onChange={(e) => setFormData({ ...formData, contactPreference: e.target.value })}>
+                        <option value="">Belirtilmedi</option>
+                        <option value="student">Öğrenci</option>
+                        <option value="parent">Veli</option>
+                        <option value="both">Hem Öğrenci Hem Veli</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">İndirim Kodu</label>
+                      <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.discountCode} onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Özel Açıklama</label>
+                      <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialNote} onChange={(e) => setFormData({ ...formData, specialNote: e.target.value })} />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={creating} className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-4 shadow-lg shadow-brand-primary/20 disabled:opacity-50">
+                    {creating ? "Ekleniyor..." : "Öğrenci Ekle"}
+                  </button>
+                </form>
               </div>
-              <button type="submit" disabled={creating} className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-logo transition-all mt-2 shadow-lg shadow-brand-primary/20 disabled:opacity-70 flex items-center justify-center gap-2">
-                {creating ? (
-                  <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Ekleniyor...</>
-                ) : "Öğrenci Ekle"}
-              </button>
-            </form>
+            </div>
           </div>
         )}
 
@@ -904,9 +899,6 @@ export default function StudentsPage() {
                           ) : "Yeniden Aktifleştir"}
                         </button>
                       )}
-                      <button onClick={() => handleDelete(student.id)} disabled={deletingId === student.id} className="text-red-400 hover:text-red-600 font-bold text-xs uppercase transition-colors disabled:opacity-50">
-                        {deletingId === student.id ? "Siliniyor..." : "Sil"}
-                      </button>
                     </td>
                   </tr>
                 ))}
@@ -971,15 +963,15 @@ export default function StudentsPage() {
                 </p>
                 <form onSubmit={handleExtendSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-bold text-brand-muted mb-1">Eklenecek Hafta Sayısı *</label>
+                    <label className="block text-sm font-bold text-brand-muted mb-1">Eklenecek Ay Sayısı *</label>
                     <input
                       type="number"
                       min="1"
-                      max="52"
+                      max="12"
                       required
                       className="w-full px-4 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                      value={extendData.weeks}
-                      onChange={(e) => setExtendData({ ...extendData, weeks: parseInt(e.target.value) || 1 })}
+                      value={extendData.months}
+                      onChange={(e) => setExtendData({ ...extendData, months: parseInt(e.target.value) || 1 })}
                     />
                   </div>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3">
@@ -1004,7 +996,7 @@ export default function StudentsPage() {
                   >
                     {extendLoading ? (
                       <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Kaydediliyor...</>
-                    ) : `${extendData.weeks} Hafta Ekle`}
+                    ) : `${extendData.months} Ay Ekle`}
                   </button>
                 </form>
               </div>

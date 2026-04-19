@@ -102,11 +102,11 @@ export default function MentorEarningsPage() {
     }
   }, [fetchEarnings])
 
-  // Initial load: veriyi hemen goster, hesaplamayi arka planda yap
+  // Initial load: veriyi hemen goster, hesaplamayi arka planda yap (admin icin)
   useEffect(() => {
     fetchEarnings()
     fetchMentors()
-    // Hesaplamayi arka planda calistir, UI'i bloklama
+    // Hesaplamayi arka planda calistir (admin panelini actiginda guncel veriler icin)
     fetch("/api/admin/mentor-earnings/calculate", { method: "POST" })
       .then(res => { if (res.ok) fetchEarnings() })
       .catch(() => {})
@@ -228,57 +228,26 @@ export default function MentorEarningsPage() {
           <h2 className="text-2xl font-bold text-brand-dark">Mentor Kazanclari (Hakedis)</h2>
         </div>
 
-        {/* Ozet Kartlari - backend'den gelen summary */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-1">Toplam Hakedis</div>
-            <div className="text-2xl font-black text-brand-dark">
-              {summary.totalAll.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
-            </div>
-            {toUsd(summary.totalAll) && (
-              <div className="text-sm text-brand-muted mt-1">${toUsd(summary.totalAll)}</div>
-            )}
-          </div>
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-1">Bekleyen Odeme</div>
-            <div className="text-2xl font-black text-yellow-600">
-              {summary.totalPending.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
-            </div>
-            {toUsd(summary.totalPending) && (
-              <div className="text-sm text-brand-muted mt-1">${toUsd(summary.totalPending)}</div>
-            )}
-          </div>
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-1">Odenen</div>
-            <div className="text-2xl font-black text-green-600">
-              {summary.totalPaid.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
-            </div>
-            {toUsd(summary.totalPaid) && (
-              <div className="text-sm text-brand-muted mt-1">${toUsd(summary.totalPaid)}</div>
-            )}
-          </div>
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-silver/10">
-            <div className="text-sm font-bold text-brand-muted mb-1">USD Kuru</div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-brand-muted">1 USD =</span>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Kur girin"
-                className="w-24 px-2 py-1 text-sm border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                value={usdRateInput}
-                onChange={(e) => setUsdRateInput(e.target.value)}
-              />
-              <span className="text-sm text-brand-muted">TL</span>
-              <button
-                onClick={saveUsdRate}
-                disabled={savingRate || !usdRateInput}
-                className="px-3 py-1 text-xs bg-brand-logo text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50 transition-all"
-              >
-                {savingRate ? "..." : "Kaydet"}
-              </button>
-            </div>
-          </div>
+        {/* USD Kuru */}
+        <div className="flex items-center gap-3 mb-6 bg-white rounded-2xl p-4 shadow-sm border border-brand-silver/10 w-fit">
+          <span className="text-sm font-bold text-brand-muted">USD Kuru:</span>
+          <span className="text-sm text-brand-muted">1 USD =</span>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Kur girin"
+            className="w-24 px-2 py-1 text-sm border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
+            value={usdRateInput}
+            onChange={(e) => setUsdRateInput(e.target.value)}
+          />
+          <span className="text-sm text-brand-muted">TL</span>
+          <button
+            onClick={saveUsdRate}
+            disabled={savingRate || !usdRateInput}
+            className="px-3 py-1 text-xs bg-brand-logo text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50 transition-all"
+          >
+            {savingRate ? "..." : "Kaydet"}
+          </button>
         </div>
 
         {/* Filtreler */}
@@ -363,10 +332,10 @@ export default function MentorEarningsPage() {
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="text-sm font-black text-brand-dark">
-                        {earning.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+                        {Number(earning.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
                       </div>
-                      {toUsd(earning.amount) && (
-                        <div className="text-xs text-brand-muted">${toUsd(earning.amount)}</div>
+                      {toUsd(Number(earning.amount)) && (
+                        <div className="text-xs text-brand-muted">${toUsd(Number(earning.amount))}</div>
                       )}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">

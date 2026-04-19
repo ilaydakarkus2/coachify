@@ -31,10 +31,25 @@ export async function PATCH(
       return NextResponse.json({ error: "Hakediş kaydı bulunamadı" }, { status: 404 })
     }
 
+    // Durum geçiş validasyonu
+    const validTransitions: Record<string, string[]> = {
+      pending: ["paid", "cancelled"],
+      paid: ["pending"],  // Geri alma (undo) izinli
+      cancelled: ["pending"],  // Geri alma (undo) izinli
+    }
+    if (!validTransitions[existing.status]?.includes(status)) {
+      return NextResponse.json(
+        { error: `'${existing.status}' durumundan '${status}' durumuna geçiş yapılamaz` },
+        { status: 400 }
+      )
+    }
+
     const earning = await prisma.mentorEarning.update({
       where: { id },
       data: {
         status,
+        ...(status === "paid" ? { paidAt: new Date() } : {}),
+        ...(status === "pending" && existing.status === "paid" ? { paidAt: null } : {}),
         ...(notes !== undefined && { notes })
       }
     })

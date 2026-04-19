@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma, getAdminUserId } from "@/lib/prisma"
-import { calculatePendingEarningsForMentor, getUsdRate } from "@/lib/mentor-earnings"
+import { prisma } from "@/lib/prisma"
+import { getUsdRate } from "@/lib/mentor-earnings"
+
+const MAX_VISIBLE_UPCOMING_CYCLES = 3
+const PAGE_SIZE = 50
 
 export async function GET() {
   try {
@@ -18,49 +21,88 @@ export async function GET() {
       return NextResponse.json({ error: "Mentor profili bulunamadı" }, { status: 404 })
     }
 
-    // Otomatik hakedis hesaplama — mentor panelini actiginda guncel veriler gormesi icin
-    try {
-      const adminUserId = await getAdminUserId()
-      const calcResult = await calculatePendingEarningsForMentor(mentor.id, adminUserId)
-      console.log(`[MENTOR/EARNINGS] Auto-calc created ${calcResult} records for mentor ${mentor.id}`)
-    } catch (calcError) {
-      console.error("[MENTOR/EARNINGS] Auto-calculation error:", calcError)
-      // Hesaplama hatasi olsa bile mevcut kayitlari gostermeye devam et
-    }
+    const now = new Date()
 
-    const earnings = await prisma.mentorEarning.findMany({
-      where: { mentorId: mentor.id },
-      include: {
-        student: {
-          select: { id: true, name: true, email: true, school: true, grade: true, status: true }
-        },
-        assignment: {
-          select: { startDate: true, endDate: true }
-        }
+    // Summary: DB-level aggregation (tüm veriyi memory'e çekme)
+    const [paidAgg, allEarningsCount] = await Promise.all([
+      prisma.mentorEarning.aggregate({
+        where: { mentorId: mentor.id, status: "paid" },
+        _sum: { amount: true },
+        _count: true
+      }),
+      prisma.mentorEarning.count({
+        where: { mentorId: mentor.id, status: { not: "cancelled" } }
+      })
+    ])
+
+    const totalEarned = Number(paidAgg._sum.amount || 0)
+
+    // Gelecekteki pending earnings'lari cycle date'e gore sirala, ilk 3 cycle'i al
+    const upcomingEarnings = await prisma.mentorEarning.findMany({
+      where: {
+        mentorId: mentor.id,
+        status: "pending",
+        cycleDate: { gt: now }
       },
-      orderBy: { cycleDate: "desc" }
+      orderBy: { cycleDate: "asc" },
+      include: {
+        student: { select: { id: true, name: true, email: true, school: true, grade: true, status: true } },
+        assignment: { select: { startDate: true, endDate: true } }
+      }
     })
 
-    const totalEarned = earnings
-      .filter(e => e.status === "paid")
-      .reduce((sum, e) => sum + e.amount, 0)
+    const visibleCycleDates = [...new Set(upcomingEarnings.map(e => e.cycleDate.getTime()))]
+      .sort((a, b) => a - b)
+      .slice(0, MAX_VISIBLE_UPCOMING_CYCLES)
 
-    const totalPending = earnings
-      .filter(e => e.status === "pending")
-      .reduce((sum, e) => sum + e.amount, 0)
+    const visibleUpcomingIds = new Set(
+      upcomingEarnings
+        .filter(e => visibleCycleDates.includes(e.cycleDate.getTime()))
+        .map(e => e.id)
+    )
+
+    const visibleUpcoming = upcomingEarnings.filter(e => visibleUpcomingIds.has(e.id))
+
+    const totalPending = visibleUpcoming.reduce((sum, e) => sum + Number(e.amount), 0)
+
+    // Gecmis earnings: paid, cancelled, veya cycleDate <= now (pagination ile)
+    const pastEarnings = await prisma.mentorEarning.findMany({
+      where: {
+        mentorId: mentor.id,
+        OR: [
+          { status: "paid" },
+          { status: "cancelled" },
+          { cycleDate: { lte: now } }
+        ]
+      },
+      orderBy: { cycleDate: "desc" },
+      take: PAGE_SIZE,
+      include: {
+        student: { select: { id: true, name: true, email: true, school: true, grade: true, status: true } },
+        assignment: { select: { startDate: true, endDate: true } }
+      }
+    })
+
+    const visibleEarnings = [
+      ...pastEarnings,
+      ...visibleUpcoming
+    ]
+
+    // Sirala
+    visibleEarnings.sort((a, b) => new Date(b.cycleDate).getTime() - new Date(a.cycleDate).getTime())
 
     const usdRate = await getUsdRate()
 
     return NextResponse.json({
       mentor: { name: mentor.name, specialty: mentor.specialty, email: mentor.email },
-      earnings,
+      earnings: visibleEarnings,
       usdRate,
       summary: {
         totalEarned,
         totalPending,
-        totalRecords: earnings.length,
-        paidCount: earnings.filter(e => e.status === "paid").length,
-        pendingCount: earnings.filter(e => e.status === "pending").length
+        totalRecords: allEarningsCount,
+        paidCount: paidAgg._count,
+        pendingCount: visibleUpcoming.length
       }
     })
   } catch (error) {

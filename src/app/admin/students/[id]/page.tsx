@@ -55,7 +55,7 @@ interface Student {
   school: string
   grade: string
   startDate: string
-  endDate: string | null
+  endDate: string
   status: string
   paymentStatus: string
   packageDuration: number
@@ -205,12 +205,12 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             <div>
               <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest">Bitiş Tarihi</label>
               <p className="text-sm font-bold text-brand-dark mt-1">
-                {student.endDate ? new Date(student.endDate).toLocaleDateString("tr-TR") : "Devam ediyor"}
+                {new Date(student.endDate).toLocaleDateString("tr-TR")}
               </p>
             </div>
             <div>
               <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest">Paket Süresi</label>
-              <p className="text-sm font-bold text-brand-dark mt-1">{student.packageDuration} hafta</p>
+              <p className="text-sm font-bold text-brand-dark mt-1">{student.packageDuration} ay</p>
             </div>
             <div>
               <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest">Ödeme Durumu</label>
