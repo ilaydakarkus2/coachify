@@ -374,15 +374,17 @@ export async function calculatePendingEarnings(adminUserId: string): Promise<num
         continue
       }
 
-      // Aktif assignment: endDate yoksa (hala devam ediyor), student.endDate veya now kullan
-      const studentEndDate = assignment.student.status !== "active" && assignment.student.endDate
+      // Aktif assignment: student.endDate her zaman hesaba katilir (paket bitis tarihi = maksimum hakedis siniri)
+      const studentEndDate = assignment.student.endDate
         ? toUTCDay(new Date(assignment.student.endDate))
         : null
 
       const assignmentEnd = assignmentEndRaw ?? studentEndDate ?? toUTCDay(now)
 
       const sag = assignment.student.purchaseDate ?? assignment.student.startDate
-      const allCycleDates = getAllCycleDates(sag, now)
+      // Cycle date uretimi: ogrencinin bitis tarihini asan tarihler uretilmesin
+      const cycleUpTo = studentEndDate && studentEndDate < now ? studentEndDate : now
+      const allCycleDates = getAllCycleDates(sag, cycleUpTo)
       const assignmentStartDay = toUTCDay(assignment.startDate)
       const cycleDates = allCycleDates.filter(d => d > assignmentStartDay)
 
@@ -514,8 +516,10 @@ export async function calculatePendingEarningsForMentor(mentorId: string, adminU
       }
 
       const sag = assignment.student.purchaseDate ?? assignment.student.startDate
-      const studentEnd = assignment.student.endDate ? new Date(assignment.student.endDate) : null
-      const allCycleDates = getAllCycleDates(sag, now)
+      const studentEnd = assignment.student.endDate ? toUTCDay(new Date(assignment.student.endDate)) : null
+      // Cycle date uretimi: ogrencinin bitis tarihini asan tarihler uretilmesin
+      const cycleUpTo = studentEnd && studentEnd < now ? studentEnd : now
+      const allCycleDates = getAllCycleDates(sag, cycleUpTo)
       const assignmentStartDay = toUTCDay(assignment.startDate)
       const cycleDates = allCycleDates.filter(d => d > assignmentStartDay)
 
@@ -525,7 +529,7 @@ export async function calculatePendingEarningsForMentor(mentorId: string, adminU
 
       const assignmentEndDate = assignment.endDate
         ? toUTCDay(new Date(assignment.endDate))
-        : studentEnd ? toUTCDay(studentEnd) : null
+        : studentEnd ? studentEnd : null
 
       // runningTotal: mevcut kayitlarin completedWeeks degerlerinden hesapla
       let runningTotal = 0
