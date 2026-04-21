@@ -78,131 +78,56 @@ export function calculateMentorEarning(
 }
 
 /**
- * UBG'ye gore bir sonraki odeme tarihini hesaplar.
+ * SAG bazinda bir sonraki aylık döngü tarihini hesaplar.
  *
- * KURAL (4.4) - "Takip eden donem":
- * - UBG 1-15 arasi → bir sonraki ayin 15'inde odeme
- * - UBG 16+ → iki ay sonrasinin 1'inde odeme
- *
- * Tarihler kronolojik sırada üretilir:
- * isFirstHalf: 15, 1, 15, 1... → month+1_15, month+2_1, month+2_15, month+3_1...
- * isSecondHalf: 1, 15, 1, 15... → month+2_1, month+2_15, month+3_1, month+3_15...
+ * KURAL (4.5) - "Ödeme döngüsü gün bazlıdır":
+ * Öğrenci ayın 4'ünde başladıysa, döngü tarihleri 4 Mayıs, 4 Haziran, 4 Temmuz...
+ * currentDate'den büyük veya eşit ilk döngü tarihini döndürür.
  */
 export function getNextPaymentDate(
   studentStartDate: Date,
   currentDate: Date
 ): Date {
-  const startDay = toUTCDay(studentStartDate)
-  const ubgDay = startDay.getUTCDate()
-  const isFirstHalf = ubgDay <= 15
-
-  const currentDay = toUTCDay(currentDate)
-
-  let year = startDay.getUTCFullYear()
-  let month = startDay.getUTCMonth()
-
-  if (isFirstHalf) {
-    // Ilk tarih: bir sonraki ayin 15'i
-    month += 1
-    if (month > 11) { month = 0; year += 1 }
-  } else {
-    // Ilk tarih: iki ay sonrasinin 1'i
-    month += 2
-    if (month > 11) { month -= 12; year += 1 }
+  const current = toUTCDay(currentDate)
+  for (let n = 1; n <= 48; n++) {
+    const candidate = addUTCMonths(studentStartDate, n)
+    if (candidate >= current) return candidate
   }
-
-  // Kronolojik tarih serisi olustur
-  for (let i = 0; i < 48; i++) {
-    let candidate: Date
-
-    if (isFirstHalf) {
-      // Seri: 15, (ay+1)1, (ay+1)15, (ay+2)1, (ay+2)15...
-      if (i % 2 === 0) {
-        candidate = new Date(Date.UTC(year, month, 15))
-      } else {
-        // Sonraki ayin 1'i
-        const nextMonth = month + 1
-        const nextYear = nextMonth > 11 ? year + 1 : year
-        const nm = nextMonth > 11 ? nextMonth - 12 : nextMonth
-        candidate = new Date(Date.UTC(nextYear, nm, 1))
-      }
-    } else {
-      // Seri: 1, (ay)15, (ay+1)1, (ay+1)15...
-      if (i % 2 === 0) {
-        candidate = new Date(Date.UTC(year, month, 1))
-      } else {
-        candidate = new Date(Date.UTC(year, month, 15))
-      }
-    }
-
-    if (candidate >= currentDay) return candidate
-
-    // Her 2 adımda bir ay ilerlet
-    if (isFirstHalf && i % 2 === 1) {
-      month += 1
-      if (month > 11) { month = 0; year += 1 }
-    } else if (!isFirstHalf && i % 2 === 1) {
-      month += 1
-      if (month > 11) { month = 0; year += 1 }
-    }
-  }
-
-  return new Date(Date.UTC(currentDay.getUTCFullYear(), currentDay.getUTCMonth() + 1, isFirstHalf ? 15 : 1))
+  return addUTCMonths(studentStartDate, 48)
 }
 
 /**
- * UBG'den itibaren tum odeme donem tarihlerini uretir.
- * Tarihler kronolojik sırada üretilir ( getNextPaymentDate ile aynı mantık).
+ * Döngü tarihinden ödeme tarihini (1 veya 15) hesaplar.
+ *
+ * KURAL (4.3 + 4.5):
+ * - cycleDate günü ≤ 15 → aynı ayın 15'inde ödeme
+ * - cycleDate günü > 15 → sonraki ayın 1'inde ödeme
+ */
+export function getPaymentDateForCycle(cycleDate: Date): Date {
+  const d = toUTCDay(cycleDate)
+  const day = d.getUTCDate()
+  if (day <= 15) {
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 15))
+  } else {
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))
+  }
+}
+
+/**
+ * SAG bazinda aylık döngü tarihlerini üretir.
+ *
+ * KURAL (4.5) - "Ödeme döngüsü gün bazlıdır":
+ * Öğrenci ayın 4'ünde başladıysa → 4 Mayıs, 4 Haziran, 4 Temmuz...
+ * addUTCMonths ile ay sonu taşması güvenli (31 Ocak + 1 ay → 28 Şubat).
  */
 export function getAllCycleDates(studentStartDate: Date, upToDate: Date): Date[] {
   const dates: Date[] = []
-  const startDay = toUTCDay(studentStartDate)
-  const ubgDay = startDay.getUTCDate()
-  const isFirstHalf = ubgDay <= 15
-
-  let year = startDay.getUTCFullYear()
-  let month = startDay.getUTCMonth()
-
-  if (isFirstHalf) {
-    month += 1
-    if (month > 11) { month = 0; year += 1 }
-  } else {
-    month += 2
-    if (month > 11) { month -= 12; year += 1 }
-  }
-
-  for (let i = 0; i < 48; i++) {
-    let cycleDate: Date
-
-    if (isFirstHalf) {
-      if (i % 2 === 0) {
-        cycleDate = new Date(Date.UTC(year, month, 15))
-      } else {
-        const nextMonth = month + 1
-        const nextYear = nextMonth > 11 ? year + 1 : year
-        const nm = nextMonth > 11 ? nextMonth - 12 : nextMonth
-        cycleDate = new Date(Date.UTC(nextYear, nm, 1))
-      }
-    } else {
-      if (i % 2 === 0) {
-        cycleDate = new Date(Date.UTC(year, month, 1))
-      } else {
-        cycleDate = new Date(Date.UTC(year, month, 15))
-      }
-    }
-
-    if (cycleDate > toUTCDay(upToDate)) break
+  const upTo = toUTCDay(upToDate)
+  for (let n = 1; n <= 48; n++) {
+    const cycleDate = addUTCMonths(studentStartDate, n)
+    if (cycleDate > upTo) break
     dates.push(cycleDate)
-
-    if (isFirstHalf && i % 2 === 1) {
-      month += 1
-      if (month > 11) { month = 0; year += 1 }
-    } else if (!isFirstHalf && i % 2 === 1) {
-      month += 1
-      if (month > 11) { month = 0; year += 1 }
-    }
   }
-
   return dates
 }
 
@@ -239,14 +164,8 @@ export async function finalizeMentorEarningForAssignment(
   adminUserId: string,
   studentStartDate: Date
 ): Promise<void> {
-  const weeklyRate = await getWeeklyRate()
-  const { completedWeeks: totalWeeks, amount: totalAmount } = calculateMentorEarning(
-    assignmentStart, assignmentEnd, weeklyRate
-  )
-
-  if (totalWeeks === 0) return
-
-  // Atama icin pending kayitlari iptal et
+  // Atama icin pending kayitlari HER DURUMDA iptal et
+  // (totalWeeks=0 olsa bile eski pending earnings kalmamali)
   await tx.mentorEarning.updateMany({
     where: {
       assignmentId,
@@ -258,6 +177,13 @@ export async function finalizeMentorEarningForAssignment(
       status: "cancelled"
     }
   })
+
+  const weeklyRate = await getWeeklyRate()
+  const { completedWeeks: totalWeeks, amount: totalAmount } = calculateMentorEarning(
+    assignmentStart, assignmentEnd, weeklyRate
+  )
+
+  if (totalWeeks === 0) return
 
   // Zaten odenmis kayitlarin toplam haftasini hesapla
   const paidEarnings = await tx.mentorEarning.findMany({

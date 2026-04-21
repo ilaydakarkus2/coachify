@@ -24,6 +24,7 @@ interface Earning {
   completedWeeks: number
   amount: number
   cycleDate: string
+  paymentDate: string
   status: string
   triggerReason: string
   assignmentStart: string
@@ -220,9 +221,9 @@ export default function MentorPage() {
             <div className="text-2xl font-black text-brand-logo">
               {(() => {
                 const now = new Date()
-                const upcoming = earnings.filter(e => e.status === "pending" && new Date(e.cycleDate) > now)
+                const upcoming = earnings.filter(e => e.status === "pending" && new Date(e.paymentDate) > now)
                 const total = upcoming.reduce((sum, e) => sum + Number(e.amount), 0)
-                const dates = [...new Set(upcoming.map(e => new Date(e.cycleDate).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })))]
+                const dates = [...new Set(upcoming.map(e => new Date(e.paymentDate).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })))]
                 return (
                   <div className="flex flex-col md:flex-row md:items-center gap-2">
                     <span>{total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</span>
@@ -277,7 +278,7 @@ export default function MentorPage() {
                       <tr>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Telefon</th>
-                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul / Sınıf</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Sınıf</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Başlangıç</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Atanma Tarihi</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Puan</th>
@@ -291,10 +292,7 @@ export default function MentorPage() {
                             <div className="text-sm font-bold text-brand-dark">{s.name}</div>
                           </td>
                           <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">{s.phone}</td>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <div className="text-sm font-bold text-brand-dark">{s.school}</div>
-                            <div className="text-xs text-brand-muted">{s.grade}</div>
-                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark">{s.grade || "—"}</td>
                           <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">
                             {new Date(s.studentStartDate).toLocaleDateString("tr-TR")}
                           </td>
@@ -333,7 +331,7 @@ export default function MentorPage() {
                       <tr>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Öğrenci</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Telefon</th>
-                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Okul / Sınıf</th>
+                        <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Sınıf</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Başlangıç</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Atanma</th>
                         <th className="px-6 py-4 text-left text-xs font-black text-brand-muted uppercase tracking-widest">Durum</th>
@@ -346,10 +344,7 @@ export default function MentorPage() {
                             <div className="text-sm font-bold text-brand-dark">{s.name}</div>
                           </td>
                           <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-muted">{s.phone}</td>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <div className="text-sm font-bold text-brand-dark">{s.school}</div>
-                            <div className="text-xs text-brand-muted">{s.grade}</div>
-                          </td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark">{s.grade || "—"}</td>
                           <td className="px-6 py-5 whitespace-nowrap text-sm text-brand-dark font-medium">
                             {new Date(s.studentStartDate).toLocaleDateString("tr-TR")}
                           </td>
@@ -377,20 +372,20 @@ export default function MentorPage() {
           <div>
             {(() => {
               const now = new Date()
-              const upcomingEarnings = earnings.filter(e => new Date(e.cycleDate) > now)
-              const pastEarnings = earnings.filter(e => new Date(e.cycleDate) <= now)
+              const upcomingEarnings = earnings.filter(e => new Date(e.paymentDate) > now)
+              const pastEarnings = earnings.filter(e => new Date(e.paymentDate) <= now)
 
               const renderGrouped = (items: Earning[], title: string, emptyMsg: string, isUpcoming: boolean) => {
                 if (items.length === 0) return null
-                const grouped = items.reduce((acc: Record<string, { cycleDate: string; items: Earning[]; total: number }>, e) => {
-                  const key = new Date(e.cycleDate).toLocaleDateString("tr-TR")
-                  if (!acc[key]) acc[key] = { cycleDate: e.cycleDate, items: [], total: 0 }
+                const grouped = items.reduce((acc: Record<string, { paymentDate: string; items: Earning[]; total: number }>, e) => {
+                  const key = new Date(e.paymentDate).toLocaleDateString("tr-TR")
+                  if (!acc[key]) acc[key] = { paymentDate: e.paymentDate, items: [], total: 0 }
                   acc[key].items.push(e)
                   acc[key].total += Number(e.amount)
                   return acc
-                }, {} as Record<string, { cycleDate: string; items: Earning[]; total: number }>)
+                }, {} as Record<string, { paymentDate: string; items: Earning[]; total: number }>)
                 const sortedGroups = Object.values(grouped).sort(
-                  (a, b) => new Date(a.cycleDate).getTime() - new Date(b.cycleDate).getTime()
+                  (a, b) => new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime()
                 )
                 const grandTotal = sortedGroups.reduce((s, g) => s + g.total, 0)
 
@@ -407,14 +402,14 @@ export default function MentorPage() {
                     </div>
                     <div className="space-y-4">
                       {sortedGroups.map((group) => (
-                        <div key={group.cycleDate} className={`bg-white shadow-xl rounded-2xl border overflow-hidden ${isUpcoming ? "border-brand-logo/30" : "border-brand-silver/10"}`}>
+                        <div key={group.paymentDate} className={`bg-white shadow-xl rounded-2xl border overflow-hidden ${isUpcoming ? "border-brand-logo/30" : "border-brand-silver/10"}`}>
                           <div className={`${isUpcoming ? "bg-brand-primary/5" : "bg-brand-ghost"} px-6 py-4 flex justify-between items-center`}>
                             <div className="flex items-center gap-3">
                               {isUpcoming && (
                                 <span className="px-2 py-0.5 text-[9px] font-black uppercase rounded bg-brand-logo text-white">Ödeme Tarihi</span>
                               )}
                               <span className="text-sm font-black text-brand-dark">
-                                {new Date(group.cycleDate).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+                                {new Date(group.paymentDate).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
                               </span>
                               <span className="text-xs text-brand-muted">({group.items.length} öğrenci)</span>
                             </div>
@@ -430,7 +425,7 @@ export default function MentorPage() {
                               <div key={e.id} className="px-6 py-4 flex items-center justify-between hover:bg-brand-sand/20 transition-colors">
                                 <div>
                                   <div className="text-sm font-bold text-brand-dark">{e.student.name}</div>
-                                  <div className="text-xs text-brand-muted">{e.student.school} • {e.student.grade}</div>
+                                  <div className="text-xs text-brand-muted">{e.student.grade}</div>
                                 </div>
                                 <div className="flex items-center gap-6">
                                   <span className="text-xs text-brand-muted font-medium">{e.completedWeeks} Hafta</span>

@@ -191,10 +191,6 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-sm font-bold text-brand-dark mt-1">{student.phone}</p>
             </div>
             <div>
-              <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest">Okul</label>
-              <p className="text-sm font-bold text-brand-dark mt-1">{student.school}</p>
-            </div>
-            <div>
               <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest">Sınıf</label>
               <p className="mt-1"><span className="px-3 py-1 text-xs font-bold bg-brand-primary/10 text-brand-logo rounded-full">{student.grade}</span></p>
             </div>

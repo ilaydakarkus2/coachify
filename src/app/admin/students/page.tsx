@@ -547,7 +547,7 @@ export default function StudentsPage() {
                       <input type="text" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-brand-muted mb-1">E-posta</label>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">E-posta <span className="text-brand-silver font-normal text-xs">(Opsiyonel)</span></label>
                       <input type="email" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                     </div>
                     <div>
@@ -556,7 +556,7 @@ export default function StudentsPage() {
                       {phoneErrors.phone && <p className="text-xs text-red-500 mt-1">{phoneErrors.phone}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf</label>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Sınıf <span className="text-brand-silver font-normal text-xs">(Opsiyonel)</span></label>
                       <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
                     </div>
                     <div>
@@ -584,7 +584,7 @@ export default function StudentsPage() {
                       <input type="date" required className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
                     </div>
                     <div className="md:col-span-2 border-t border-brand-silver/30 pt-3 mt-1">
-                      <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-2">Veli Bilgileri</p>
+                      <p className="text-xs font-black text-brand-muted uppercase tracking-wider mb-2">Veli Bilgileri <span className="font-normal normal-case tracking-normal">(Opsiyonel)</span></p>
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-brand-muted mb-1">Veli Adı Soyadı</label>
@@ -596,7 +596,7 @@ export default function StudentsPage() {
                       {phoneErrors.parentPhone && <p className="text-xs text-red-500 mt-1">{phoneErrors.parentPhone}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-brand-muted mb-1">İletişim Tercihi</label>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">İletişim Tercihi <span className="text-brand-silver font-normal text-xs">(Opsiyonel)</span></label>
                       <select className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.contactPreference} onChange={(e) => setFormData({ ...formData, contactPreference: e.target.value })}>
                         <option value="">Belirtilmedi</option>
                         <option value="student">Öğrenci</option>
@@ -605,11 +605,11 @@ export default function StudentsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-brand-muted mb-1">İndirim Kodu</label>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">İndirim Kodu <span className="text-brand-silver font-normal text-xs">(Opsiyonel)</span></label>
                       <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.discountCode} onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })} />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-brand-muted mb-1">Özel Açıklama</label>
+                      <label className="block text-sm font-bold text-brand-muted mb-1">Özel Açıklama <span className="text-brand-silver font-normal text-xs">(Opsiyonel)</span></label>
                       <input type="text" className="w-full px-3 py-2 border border-brand-silver rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" value={formData.specialNote} onChange={(e) => setFormData({ ...formData, specialNote: e.target.value })} />
                     </div>
                   </div>

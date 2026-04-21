@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { name, email, phone, school, grade, startDate, endDate, mentorId,
+    const { name, email, phone, grade, startDate, endDate, mentorId,
             parentName, parentPhone, currentNetScore, targetNetScore,
             specialNote, membershipType, discountCode, stripeId,
             contactPreference, sendMessage } = body;
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
         name,
         email: email || null,
         phone,
-        school: school || "",
+        school: "",
         grade: grade || "",
         startDate: startDt,
         endDate: new Date(endDate),

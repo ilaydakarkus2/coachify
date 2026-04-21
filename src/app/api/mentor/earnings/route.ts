@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getUsdRate } from "@/lib/mentor-earnings"
+import { getUsdRate, getPaymentDateForCycle } from "@/lib/mentor-earnings"
 
 const MAX_VISIBLE_UPCOMING_CYCLES = 3
 const PAGE_SIZE = 50
@@ -37,7 +37,7 @@ export async function GET() {
 
     const totalEarned = Number(paidAgg._sum.amount || 0)
 
-    // Gelecekteki pending earnings'lari cycle date'e gore sirala, ilk 3 cycle'i al
+    // Gelecekteki pending earnings'lari cycle date'e gore sirala
     const upcomingEarnings = await prisma.mentorEarning.findMany({
       where: {
         mentorId: mentor.id,
@@ -51,17 +51,15 @@ export async function GET() {
       }
     })
 
-    const visibleCycleDates = [...new Set(upcomingEarnings.map(e => e.cycleDate.getTime()))]
-      .sort((a, b) => a - b)
+    // 3-döngü sınırını ödeme tarihine (1/15) göre uygula
+    const uniquePaymentDates = [...new Set(
+      upcomingEarnings.map(e => getPaymentDateForCycle(e.cycleDate).getTime())
+    )].sort((a, b) => a - b)
       .slice(0, MAX_VISIBLE_UPCOMING_CYCLES)
 
-    const visibleUpcomingIds = new Set(
-      upcomingEarnings
-        .filter(e => visibleCycleDates.includes(e.cycleDate.getTime()))
-        .map(e => e.id)
+    const visibleUpcoming = upcomingEarnings.filter(e =>
+      uniquePaymentDates.includes(getPaymentDateForCycle(e.cycleDate).getTime())
     )
-
-    const visibleUpcoming = upcomingEarnings.filter(e => visibleUpcomingIds.has(e.id))
 
     const totalPending = visibleUpcoming.reduce((sum, e) => sum + Number(e.amount), 0)
 
@@ -93,9 +91,16 @@ export async function GET() {
 
     const usdRate = await getUsdRate()
 
+    // Her earning'e paymentDate ekle (frontend gruplama için)
+    const earningsWithPaymentDate = visibleEarnings.map(e => ({
+      ...e,
+      cycleDate: e.cycleDate.toISOString(),
+      paymentDate: getPaymentDateForCycle(e.cycleDate).toISOString()
+    }))
+
     return NextResponse.json({
       mentor: { name: mentor.name, specialty: mentor.specialty, email: mentor.email },
-      earnings: visibleEarnings,
+      earnings: earningsWithPaymentDate,
       usdRate,
       summary: {
         totalEarned,

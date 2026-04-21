@@ -89,7 +89,7 @@ export async function PATCH(
 
     console.log("[API] PATCH /api/admin/students/[id] - Updating student:", id)
     const body = await request.json()
-    const { name, email, phone, school, grade, startDate, endDate, status, paymentStatus,
+    const { name, email, phone, grade, startDate, endDate, status, paymentStatus,
             parentName, parentPhone, currentNetScore, targetNetScore,
             specialNote, dropReason, refundStatus, mentorChangeNote,
             droppedMonth, searchDay, searchMonth, contactPreference,
@@ -119,7 +119,6 @@ export async function PATCH(
     if (name) updateData.name = name
     if (email) updateData.email = email
     if (phone) updateData.phone = phone
-    if (school) updateData.school = school
     if (grade) updateData.grade = grade
     if (startDate) updateData.startDate = new Date(startDate)
     if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null
@@ -157,7 +156,10 @@ export async function PATCH(
       })
 
       if (activeAssignments.length > 0) {
-        const dropDate = new Date()
+        // Admin'in belirledigi endDate'i kullan, yoksa simdiki zamani kullan
+        const dropDate = updateData.endDate
+          ? new Date(updateData.endDate)
+          : new Date()
         const adminId = await getAdminUserId()
 
         // 14 gun iade kontrolu (Brief 4.7)
@@ -198,15 +200,13 @@ export async function PATCH(
             )
           }
 
-          // Ogrenci bitis tarihini ve iade durumunu guncelle
-          const txUpdateData: any = { endDate: dropDate }
+          // Iade durumunu guncelle (endDate zaten line 148'de admin tarafindan ayarlandi)
           if (is14DayRefund) {
-            txUpdateData.refundStatus = "14_gun_tam_iade"
+            await tx.student.update({
+              where: { id },
+              data: { refundStatus: "14_gun_tam_iade" }
+            })
           }
-          await tx.student.update({
-            where: { id },
-            data: txUpdateData
-          })
         })
       }
     }
