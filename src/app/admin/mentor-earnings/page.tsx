@@ -226,6 +226,17 @@ export default function MentorEarningsPage() {
     <>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-brand-dark">Mentor Kazanclari (Hakedis)</h2>
+          <button
+            onClick={() => {
+              const p = new URLSearchParams()
+              if (filters.status) p.set("status", filters.status)
+              if (filters.mentorId) p.set("mentorId", filters.mentorId)
+              window.open(`/api/admin/mentor-earnings/export?${p.toString()}`)
+            }}
+            className="bg-brand-dark text-white px-4 py-2 rounded-xl font-bold hover:bg-brand-dark/90 transition-all text-sm"
+          >
+            CSV İndir ↓
+          </button>
         </div>
 
         {/* USD Kuru */}

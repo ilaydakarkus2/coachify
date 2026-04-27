@@ -436,12 +436,27 @@ export default function StudentsPage() {
     <>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-brand-dark">Öğrenciler</h2>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className={`${showForm ? 'bg-brand-muted' : 'bg-brand-logo'} text-white px-5 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-brand-logo/20`}
-          >
-            {showForm ? "Vazgeç" : "+ Yeni Öğrenci"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const p = new URLSearchParams()
+                if (filters.status) p.set("status", filters.status)
+                if (filters.paymentStatus) p.set("paymentStatus", filters.paymentStatus)
+                if (filters.search) p.set("search", filters.search)
+                if (filters.mentorId) p.set("mentorId", filters.mentorId)
+                window.open(`/api/admin/students/export?${p.toString()}`)
+              }}
+              className="bg-brand-dark text-white px-4 py-2 rounded-xl font-bold hover:bg-brand-dark/90 transition-all text-sm"
+            >
+              CSV İndir ↓
+            </button>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className={`${showForm ? 'bg-brand-muted' : 'bg-brand-logo'} text-white px-5 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-brand-logo/20`}
+            >
+              {showForm ? "Vazgeç" : "+ Yeni Öğrenci"}
+            </button>
+          </div>
         </div>
 
         {/* Filtreler */}

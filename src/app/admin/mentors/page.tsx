@@ -136,12 +136,20 @@ export default function MentorsPage() {
     <>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-brand-dark">Mentorlar</h2>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className={`${showForm ? 'bg-brand-muted' : 'bg-brand-logo'} text-white px-5 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-brand-logo/20`}
-          >
-            {showForm ? "Vazgec" : "+ Yeni Mentor"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => window.open("/api/admin/mentors/export")}
+              className="bg-brand-dark text-white px-4 py-2 rounded-xl font-bold hover:bg-brand-dark/90 transition-all text-sm"
+            >
+              CSV İndir ↓
+            </button>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className={`${showForm ? 'bg-brand-muted' : 'bg-brand-logo'} text-white px-5 py-2 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-brand-logo/20`}
+            >
+              {showForm ? "Vazgec" : "+ Yeni Mentor"}
+            </button>
+          </div>
         </div>
 
         {/* Yeni Mentor Ekleme Formu Modali */}
